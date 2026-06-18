@@ -78,6 +78,7 @@
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-petition" type="button">陳情</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-roster" type="button">學生名單</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-email" type="button">信件範本</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-gongwen" type="button">公文</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-pagetext" type="button">頁面說明</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-system" type="button">系統設定</button></li>
     <li class="nav-item d-none" id="tab-audit-li"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-audit" type="button">操作紀錄</button></li>
@@ -269,6 +270,28 @@
       <h5>寄信範本</h5>
       <p class="text-muted small">可用變數：<code>{name}</code> 借用人、<code>{venue}</code> 場地、<code>{time}</code> 時間、<code>{reason}</code> 原因（依信件類型而定）。</p>
       <div id="email-list"></div>
+    </div>
+
+    <!-- 公文產生器 -->
+    <div class="tab-pane fade" id="t-gongwen">
+      <h5>正式公文產生器</h5>
+      <p class="text-muted small">填寫後按「產生 PDF」，於列印視窗選擇「另存為 PDF」即可。</p>
+      <div class="row g-2" style="max-width:880px">
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">文別</label>
+          <select id="gw-type" class="form-select form-select-sm"><option>函</option><option>書函</option><option>公告</option><option>開會通知單</option></select></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">發文日期</label><input id="gw-date" type="date" class="form-control form-control-sm" /></div>
+        <div class="col-12 col-md-6"><label class="form-label mb-0 small">發文字號</label><input id="gw-no" class="form-control form-control-sm" placeholder="社科院學生會字第 ___ 號" /></div>
+        <div class="col-12"><label class="form-label mb-0 small">受文者</label><input id="gw-to" class="form-control form-control-sm" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">速別</label><input id="gw-speed" class="form-control form-control-sm" value="普通件" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">密等</label><input id="gw-secret" class="form-control form-control-sm" value="普通" /></div>
+        <div class="col-12 col-md-6"><label class="form-label mb-0 small">附件</label><input id="gw-attach" class="form-control form-control-sm" /></div>
+        <div class="col-12"><label class="form-label mb-0 small">主旨</label><textarea id="gw-subject" class="form-control form-control-sm" rows="2"></textarea></div>
+        <div class="col-12"><label class="form-label mb-0 small">說明（可分項，自行換行；可用「一、二、三、」）</label><textarea id="gw-body" class="form-control form-control-sm" rows="6"></textarea></div>
+        <div class="col-12 col-md-6"><label class="form-label mb-0 small">正本</label><input id="gw-orig" class="form-control form-control-sm" /></div>
+        <div class="col-12 col-md-6"><label class="form-label mb-0 small">副本</label><input id="gw-copy" class="form-control form-control-sm" /></div>
+        <div class="col-12 col-md-6"><label class="form-label mb-0 small">署名（職稱 姓名）</label><input id="gw-signer" class="form-control form-control-sm" placeholder="會長　＿＿＿" /></div>
+      </div>
+      <button class="btn btn-primary mt-3" onclick="genGongwen()">產生 PDF（列印）</button>
     </div>
 
     <!-- 頁面說明 -->
@@ -915,7 +938,8 @@
       call('listRegistrations', eventId).then(function (rows) {
         var withEmail = rows.filter(function (r) { return r.email; }).length;
         var html = '<div class="d-flex justify-content-between align-items-center mb-1"><h6 class="mb-0">報名名單：' + esc(title) + '（' + rows.length + ' 人）</h6>' +
-          '<button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById(\'ev-regs\').innerHTML=\'\'">關閉</button></div>';
+          '<div><button class="btn btn-sm btn-outline-dark me-1" onclick="signInSheet()">簽到表 (PDF)</button>' +
+          '<button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById(\'ev-regs\').innerHTML=\'\'">關閉</button></div></div>';
         html += '<div class="card mb-2"><div class="card-body py-2" style="max-width:820px">' +
           '<div class="fw-bold mb-1">發信給報名者（' + withEmail + ' 人有填 Email）</div>' +
           '<input id="reg-subj" class="form-control form-control-sm mb-1" placeholder="主旨">' +
@@ -940,6 +964,50 @@
     }
     function delReg(id) { var ev = window.__regEvent; if (confirm('刪除此筆報名？')) call('deleteRegistration', id).then(function () { viewRegs(ev.id, ev.title); }); }
 
+    // ---------- 列印 / PDF ----------
+    function printDoc(title, innerHtml, extraCss) {
+      var w = window.open('', '_blank');
+      if (!w) { notify('請允許彈出視窗，以匯出 PDF', false); return; }
+      var css = '@page{size:A4;margin:2cm;} body{font-family:"PingFang TC","Microsoft JhengHei","Noto Sans TC",-apple-system,sans-serif;color:#000;line-height:1.8;} ' +
+        'table{width:100%;border-collapse:collapse;} th,td{border:1px solid #000;padding:8px;} h2{text-align:center;margin:0 0 12px;} ' + (extraCss || '');
+      w.document.write('<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><title>' + esc(title) + '</title><style>' + css + '</style></head><body>' + innerHtml + '</body></html>');
+      w.document.close(); w.focus();
+      setTimeout(function () { w.print(); }, 350);
+    }
+    function signInSheet() {
+      var ev = window.__regEvent; if (!ev) return;
+      call('listRegistrations', ev.id).then(function (rows) {
+        var trs = '';
+        rows.forEach(function (r, i) { trs += '<tr><td style="text-align:center">' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.dept) + '</td><td></td></tr>'; });
+        for (var k = 0; k < 8; k++) trs += '<tr><td style="text-align:center">' + (rows.length + k + 1) + '</td><td></td><td></td><td></td></tr>';
+        var body = '<h2>' + esc(ev.title) + '　簽到表</h2>' +
+          '<table><thead><tr><th style="width:56px">編號</th><th>姓名</th><th style="width:28%">系級</th><th style="width:34%">簽名</th></tr></thead><tbody>' + trs + '</tbody></table>';
+        printDoc(ev.title + ' 簽到表', body, 'td{height:42px;}');
+      });
+    }
+    function rocDate(iso) {
+      if (!iso) return '';
+      var d = new Date(iso + 'T00:00:00');
+      if (isNaN(d)) return iso;
+      return '中華民國 ' + (d.getFullYear() - 1911) + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
+    }
+    function genGongwen() {
+      var v = function (id) { return document.getElementById(id).value.trim(); };
+      var meta = [['受文者', v('gw-to')], ['發文日期', rocDate(v('gw-date'))], ['發文字號', v('gw-no')],
+        ['速別', v('gw-speed')], ['密等及解密條件或保密期限', v('gw-secret')], ['附件', v('gw-attach')]];
+      var metaHtml = meta.filter(function (r) { return r[1]; }).map(function (r) { return '<div><b>' + r[0] + '：</b>' + esc(r[1]) + '</div>'; }).join('');
+      var html = '<div style="text-align:center;font-size:22px;font-weight:bold;letter-spacing:6px;margin-bottom:6px">國立臺灣大學社會科學院學生會　' + esc(v('gw-type')) + '</div>' +
+        '<hr style="border:0;border-top:2px solid #000;margin:6px 0">' +
+        '<div style="margin:10px 0">' + metaHtml + '</div>' +
+        '<hr style="border:0;border-top:1px solid #000;margin:6px 0">' +
+        (v('gw-subject') ? '<div style="margin:14px 0;font-size:16px"><b>主旨：</b>' + esc(v('gw-subject')).replace(/\n/g, '<br>') + '</div>' : '') +
+        (v('gw-body') ? '<div style="margin:14px 0"><b>說明：</b><div style="white-space:pre-wrap;margin-top:4px">' + esc(v('gw-body')) + '</div></div>' : '') +
+        (v('gw-orig') ? '<div style="margin-top:20px"><b>正本：</b>' + esc(v('gw-orig')) + '</div>' : '') +
+        (v('gw-copy') ? '<div><b>副本：</b>' + esc(v('gw-copy')) + '</div>' : '') +
+        (v('gw-signer') ? '<div style="text-align:center;margin-top:48px;font-size:18px;letter-spacing:4px">' + esc(v('gw-signer')) + '</div>' : '');
+      printDoc('公文', html, 'body{font-size:15px;}');
+    }
+
     // ---------- 分頁載入 ----------
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (btn) {
       btn.addEventListener('shown.bs.tab', function (e) {
@@ -948,6 +1016,7 @@
         if (t === '#t-announce') loadAnnounce();
         if (t === '#t-events') loadEvents();
         if (t === '#t-roster') loadSettings();
+        if (t === '#t-gongwen') { var gd = document.getElementById('gw-date'); if (!gd.value) gd.value = new Date().toISOString().slice(0, 10); }
         if (t === '#t-calendar') loadCal();
         if (t === '#t-venue') { loadVenuePending(); loadVenueAll(); }
         if (t === '#t-vset') { loadClosed(); loadSettings(); }
