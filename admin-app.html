@@ -77,7 +77,7 @@
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-email" type="button">信件範本</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-pagetext" type="button">頁面說明</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-system" type="button">系統設定</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-audit" type="button">操作紀錄</button></li>
+    <li class="nav-item d-none" id="tab-audit-li"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-audit" type="button">操作紀錄</button></li>
   </ul>
 
   <div class="tab-content">
@@ -242,6 +242,7 @@
         <button class="btn btn-primary" onclick="saveSetting('locker_deposit', document.getElementById('set-deposit').value)">儲存</button>
       </div>
 
+      <div id="admin-mgmt" class="d-none">
       <hr />
       <h5>管理員名單</h5>
       <div id="adm-owner-only">
@@ -253,8 +254,8 @@
           <div class="col-12 col-md-2 d-grid"><button class="btn btn-primary btn-sm" onclick="addAdm()">新增/更新</button></div>
         </div>
       </div>
-      <div id="adm-readonly-note" class="text-muted small mb-2 d-none">您可檢視名單，但僅擁有者帳號可新增或移除管理員。</div>
       <div id="adm-list"></div>
+      </div><!-- /#admin-mgmt -->
     </div>
 
     <!-- 操作紀錄 -->
@@ -314,6 +315,7 @@
         ME = String(email || '').toLowerCase();
         document.getElementById('admin-email').textContent = email;
         enterApp();
+        applyOwnerUI();
         loadAnnounce();
       }).catch(function (e) {
         TOKEN = null;
@@ -619,15 +621,18 @@
     }
     function saveSetting(key, val) { call('saveSetting', key, val).then(function () { notify('已儲存'); }); }
     function isOwner() { return OWNERS.indexOf(ME) !== -1; }
-    function loadAdmins() {
+    function applyOwnerUI() {
       var owner = isOwner();
-      document.getElementById('adm-owner-only').classList.toggle('d-none', !owner);
-      document.getElementById('adm-readonly-note').classList.toggle('d-none', owner);
+      document.getElementById('tab-audit-li').classList.toggle('d-none', !owner);
+      document.getElementById('admin-mgmt').classList.toggle('d-none', !owner);
+    }
+    function loadAdmins() {
+      if (!isOwner()) return;
       call('listAdmins').then(function (list) {
         document.getElementById('adm-list').innerHTML =
           '<table class="table table-sm table-bordered align-middle" style="max-width:760px"><thead><tr><th>姓名</th><th>職稱</th><th>Email</th><th></th></tr></thead><tbody>' +
           list.map(function (a) {
-            var actions = (owner && !a.owner)
+            var actions = (!a.owner)
               ? '<button class="btn btn-sm btn-outline-primary" onclick="editAdm(' + JSON.stringify(a).replace(/"/g, '&quot;') + ')">編輯</button> ' +
                 '<button class="btn btn-sm btn-outline-danger" onclick="rmAdm(\'' + esc(a.email) + '\')">移除</button>'
               : (a.owner ? '<span class="badge bg-dark">擁有者</span>' : '');
@@ -734,7 +739,7 @@
         if (t === '#t-email') loadEmail();
         if (t === '#t-pagetext') loadPageTexts();
         if (t === '#t-system') { loadSettings(); loadAdmins(); }
-        if (t === '#t-audit') loadAudit();
+        if (t === '#t-audit' && isOwner()) loadAudit();
       });
     });
 
