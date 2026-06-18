@@ -57,7 +57,7 @@
     </div>
   </div>
 
-  <div id="app" style="display:none">
+  <div id="app" class="d-none">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0">社科院學生會 後台管理</h4>
     <span class="d-flex align-items-center gap-2">
@@ -278,10 +278,18 @@
     var CLIENT_ID = '980997931795-8aq3kc0ca3eqovdocb01o646f4effrgi.apps.googleusercontent.com';
     var TOKEN = null;
 
+    // 用 Bootstrap 的 d-none/d-flex 切換（.d-flex 帶 !important，不能只改 style.display）
     function showGate(msg) {
-      document.getElementById('app').style.display = 'none';
-      document.getElementById('signin-gate').style.display = 'flex';
+      document.getElementById('app').classList.add('d-none');
+      var g = document.getElementById('signin-gate');
+      g.classList.remove('d-none'); g.classList.add('d-flex');
       document.getElementById('gate-msg').textContent = msg || '';
+    }
+    function enterApp() {
+      try { google.accounts.id.cancel(); } catch (e) {}   // 收掉殘留的 Google 提示
+      var g = document.getElementById('signin-gate');
+      g.classList.remove('d-flex'); g.classList.add('d-none');
+      document.getElementById('app').classList.remove('d-none');
     }
     function onSignIn(resp) {
       if (!resp || !resp.credential) { showGate('未取得 Google 憑證，請重試。'); return; }
@@ -289,9 +297,7 @@
       document.getElementById('gate-msg').textContent = '驗證中…';
       call('whoami').then(function (email) {
         document.getElementById('admin-email').textContent = email;
-        try { google.accounts.id.cancel(); } catch (e) {}   // 收掉殘留的 Google 提示
-        document.getElementById('signin-gate').style.display = 'none';
-        document.getElementById('app').style.display = '';
+        enterApp();
         loadAnnounce();
       }).catch(function (e) {
         TOKEN = null;
