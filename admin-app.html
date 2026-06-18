@@ -278,29 +278,31 @@
       <p class="text-muted small">填寫後按「產生 PDF」，於列印視窗選擇「另存為 PDF」即可。</p>
       <div class="row g-2" style="max-width:880px">
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">文別</label>
-          <select id="gw-type" class="form-select form-select-sm"><option>函</option><option>書函</option><option>公告</option><option>開會通知單</option></select></div>
+          <select id="gw-type" class="form-select form-select-sm" onchange="gwToggle()"><option>公告</option><option>函</option><option>書函</option><option>令</option><option>開會通知單</option></select></div>
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">發文日期</label><input id="gw-date" type="date" class="form-control form-control-sm" /></div>
         <div class="col-12 col-md-6"><label class="form-label mb-0 small">發文字號</label><input id="gw-no" class="form-control form-control-sm" placeholder="社科院學生會字第 ___ 號" /></div>
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">檔號</label><input id="gw-file" class="form-control form-control-sm" /></div>
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">保存年限</label><input id="gw-keep" class="form-control form-control-sm" /></div>
-        <div class="col-12"><label class="form-label mb-0 small">地址</label><input id="gw-addr" class="form-control form-control-sm" placeholder="106 臺北市大安區羅斯福路四段一號" /></div>
-        <div class="col-12"><label class="form-label mb-0 small">聯絡方式</label><input id="gw-contact" class="form-control form-control-sm" placeholder="承辦人：○○○　電話：○○　Email：ntusssa2@gmail.com" /></div>
-        <div class="col-12"><label class="form-label mb-0 small">受文者</label><input id="gw-to" class="form-control form-control-sm" /></div>
-        <div class="col-6 col-md-3"><label class="form-label mb-0 small">速別</label><input id="gw-speed" class="form-control form-control-sm" value="普通件" /></div>
-        <div class="col-6 col-md-3"><label class="form-label mb-0 small">密等</label><input id="gw-secret" class="form-control form-control-sm" value="普通" /></div>
-        <div class="col-12 col-md-6"><label class="form-label mb-0 small">附件</label><input id="gw-attach" class="form-control form-control-sm" /></div>
+        <div class="col-12 gw-han"><label class="form-label mb-0 small">地址</label><input id="gw-addr" class="form-control form-control-sm" placeholder="106 臺北市大安區羅斯福路四段一號" /></div>
+        <div class="col-12 gw-han"><label class="form-label mb-0 small">聯絡方式</label><input id="gw-contact" class="form-control form-control-sm" placeholder="承辦人：○○○　電話：○○　Email：ntusssa2@gmail.com" /></div>
+        <div class="col-12 gw-han"><label class="form-label mb-0 small">受文者</label><input id="gw-to" class="form-control form-control-sm" /></div>
+        <div class="col-6 col-md-3 gw-han"><label class="form-label mb-0 small">速別</label><input id="gw-speed" class="form-control form-control-sm" value="普通件" /></div>
+        <div class="col-6 col-md-3 gw-han"><label class="form-label mb-0 small">密等</label><input id="gw-secret" class="form-control form-control-sm" value="普通" /></div>
+        <div class="col-12 col-md-6"><label class="form-label mb-0 small">附件</label><input id="gw-attach" class="form-control form-control-sm" placeholder="公告可填「如文」" /></div>
         <div class="col-12"><label class="form-label mb-0 small">主旨</label><textarea id="gw-subject" class="form-control form-control-sm" rows="2"></textarea></div>
-        <div class="col-12"><label class="form-label mb-0 small">說明（可分項，自行換行；可用「一、二、三、」）</label><textarea id="gw-body" class="form-control form-control-sm" rows="6"></textarea></div>
-        <div class="col-12 col-md-6"><label class="form-label mb-0 small">正本</label><input id="gw-orig" class="form-control form-control-sm" /></div>
-        <div class="col-12 col-md-6"><label class="form-label mb-0 small">副本</label><input id="gw-copy" class="form-control form-control-sm" /></div>
-        <div class="col-12 col-md-6"><label class="form-label mb-0 small">署名（職稱 姓名）</label><input id="gw-signer" class="form-control form-control-sm" placeholder="會長　＿＿＿" /></div>
+        <div class="col-12 gw-han"><label class="form-label mb-0 small">說明（函、書函用；可分項「一、二、三、」）</label><textarea id="gw-body" class="form-control form-control-sm" rows="5"></textarea></div>
+        <div class="col-12 gw-anno"><label class="form-label mb-0 small">依據（公告用）</label><textarea id="gw-basis" class="form-control form-control-sm" rows="2"></textarea></div>
+        <div class="col-12 gw-anno"><label class="form-label mb-0 small">公告事項（公告用；可分項）</label><textarea id="gw-notice" class="form-control form-control-sm" rows="5"></textarea></div>
+        <div class="col-12 col-md-6 gw-han"><label class="form-label mb-0 small">正本</label><input id="gw-orig" class="form-control form-control-sm" /></div>
+        <div class="col-12 col-md-6 gw-han"><label class="form-label mb-0 small">副本</label><input id="gw-copy" class="form-control form-control-sm" /></div>
+        <div class="col-12 col-md-6"><label class="form-label mb-0 small">署名（職銜 姓名）</label><input id="gw-signer" class="form-control form-control-sm" placeholder="主任委員　＿＿＿" /></div>
         <div class="col-12 col-md-6"><label class="form-label mb-0 small">機關印信文字</label><input id="gw-sealtext" class="form-control form-control-sm" value="國立臺灣大學社會科學院學生會" /></div>
         <div class="col-12 d-flex flex-wrap gap-3 ms-2">
-          <div class="form-check"><input id="gw-seal" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">加蓋機關印信（紅色正方形・隸書，蓋於發文字號）</label></div>
-          <div class="form-check"><input id="gw-jobseal" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">加蓋職名章（藍色，於署名）</label></div>
+          <div class="form-check"><input id="gw-seal" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">加蓋機關印信（紅色正方形・隸書）</label></div>
+          <div class="form-check gw-han"><input id="gw-jobseal" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">加蓋職名章（藍色，函用）</label></div>
         </div>
       </div>
-      <p class="text-muted small mt-2 mb-0">公文以標楷體呈現、機關印信以隸書（系統需安裝對應字型：標楷體 BiauKai/DFKai-SB、隸書 LiSu）。</p>
+      <p class="text-muted small mt-2 mb-0">公告：主旨／依據／公告事項三段，機關印信置右側、首長職銜姓名於下方；函：含受文者、說明、正本副本等。標楷體＋隸書印信需系統已安裝對應字型。</p>
       <button class="btn btn-primary mt-2" onclick="genGongwen()">產生 PDF（列印）</button>
     </div>
 
@@ -1001,45 +1003,56 @@
       if (isNaN(d)) return iso;
       return '中華民國 ' + (d.getFullYear() - 1911) + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
     }
+    function gwToggle() {
+      var anno = ['公告', '令'].indexOf(document.getElementById('gw-type').value) !== -1;
+      document.querySelectorAll('#t-gongwen .gw-han').forEach(function (el) { el.classList.toggle('d-none', anno); });
+      document.querySelectorAll('#t-gongwen .gw-anno').forEach(function (el) { el.classList.toggle('d-none', !anno); });
+    }
     function genGongwen() {
       var v = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
-      var line = function (label, val) { return val ? '<div><b>' + esc(label) + '：</b>' + esc(val).replace(/\n/g, '<br>') + '</div>' : ''; };
-      var govSeal = document.getElementById('gw-seal').checked && v('gw-sealtext');     // 機關印信（紅）
-      var jobSeal = document.getElementById('gw-jobseal').checked && v('gw-signer');    // 職名章（藍）
+      var type = v('gw-type');
+      var anno = ['公告', '令'].indexOf(type) !== -1;
+      var seg = function (label, val) { return val ? '<div class="seg"><span class="seg-label"><b>' + esc(label) + '：</b></span><span class="seg-body">' + esc(val) + '</span></div>' : ''; };
+      var meta = function (label, val) { return val ? '<div>' + esc(label) + '：' + esc(val).replace(/\n/g, '<br>') + '</div>' : ''; };
+      var sealText = esc(v('gw-sealtext'));
+      var govSeal = document.getElementById('gw-seal').checked && v('gw-sealtext');
+      var sealMark = '<div class="seal-mark">' + sealText + '</div>';
+      var top = (v('gw-file') || v('gw-keep')) ? '<div class="topbox">檔　號：' + esc(v('gw-file')) + '<br>保存年限：' + esc(v('gw-keep')) + '</div>' : '';
+      var orgHead = '<h1 class="org">國立臺灣大學社會科學院學生會　' + esc(type) + '</h1>';
 
-      var top = (v('gw-file') || v('gw-keep'))
-        ? '<div class="topbox">檔　號：' + esc(v('gw-file')) + '<br>保存年限：' + esc(v('gw-keep')) + '</div>' : '';
-      var addr = (v('gw-addr') || v('gw-contact'))
-        ? '<div class="addr">' + (v('gw-addr') ? '地址：' + esc(v('gw-addr')) + '<br>' : '') + (v('gw-contact') ? '聯絡方式：' + esc(v('gw-contact')) : '') + '</div>' : '';
-      var mgmt = line('受文者', v('gw-to')) + line('發文日期', rocDate(v('gw-date'))) + line('發文字號', v('gw-no')) +
-        line('速別', v('gw-speed')) + line('密等及解密條件或保密期限', v('gw-secret')) + line('附件', v('gw-attach'));
-
-      var html = top +
-        '<h1 class="org">國立臺灣大學社會科學院學生會　' + esc(v('gw-type')) + '</h1>' +
-        addr +
-        '<div class="mgmt">' + mgmt + (govSeal ? '<span class="gov-seal">' + esc(v('gw-sealtext')) + '</span>' : '') + '</div>' +
-        '<hr class="sep">' +
-        (v('gw-subject') ? '<div class="subject"><b>主旨：</b>' + esc(v('gw-subject')).replace(/\n/g, '<br>') + '</div>' : '') +
-        (v('gw-body') ? '<div class="explain"><b>說明：</b><div class="explain-body">' + esc(v('gw-body')) + '</div></div>' : '') +
-        '<div class="copies">' + (v('gw-orig') ? '<div><b>正本：</b>' + esc(v('gw-orig')) + '</div>' : '') + (v('gw-copy') ? '<div><b>副本：</b>' + esc(v('gw-copy')) + '</div>' : '') + '</div>' +
-        ((v('gw-signer') || jobSeal) ? '<div class="signer">' +
-          (v('gw-signer') ? '<span class="signer-name">' + esc(v('gw-signer')) + '</span>' : '') +
-          (jobSeal ? '<span class="job-seal">' + esc(v('gw-signer')) + '</span>' : '') + '</div>' : '');
+      var html;
+      if (anno) {
+        var am = meta('發文日期', rocDate(v('gw-date'))) + meta('發文字號', v('gw-no')) + meta('附件', v('gw-attach'));
+        html = top + orgHead +
+          '<div class="anno-head"><div class="anno-meta">' + am + '</div>' + (govSeal ? '<div class="seal-box">' + sealMark + '</div>' : '') + '</div>' +
+          seg('主旨', v('gw-subject')) + seg('依據', v('gw-basis')) + seg('公告事項', v('gw-notice')) +
+          (v('gw-signer') ? '<div class="anno-signer">' + esc(v('gw-signer')) + '</div>' : '');
+      } else {
+        var jobSeal = document.getElementById('gw-jobseal').checked && v('gw-signer');
+        var addr = (v('gw-addr') || v('gw-contact')) ? '<div class="addr">' + (v('gw-addr') ? '地址：' + esc(v('gw-addr')) + '<br>' : '') + (v('gw-contact') ? '聯絡方式：' + esc(v('gw-contact')) : '') + '</div>' : '';
+        var mg = meta('受文者', v('gw-to')) + meta('發文日期', rocDate(v('gw-date'))) + meta('發文字號', v('gw-no')) +
+          meta('速別', v('gw-speed')) + meta('密等及解密條件或保密期限', v('gw-secret')) + meta('附件', v('gw-attach'));
+        html = top + orgHead + addr +
+          '<div class="mgmt">' + mg + (govSeal ? '<div class="seal-mark seal-abs">' + sealText + '</div>' : '') + '</div>' +
+          '<hr class="sep">' + seg('主旨', v('gw-subject')) + seg('說明', v('gw-body')) +
+          '<div class="copies">' + (v('gw-orig') ? '<div><b>正本：</b>' + esc(v('gw-orig')) + '</div>' : '') + (v('gw-copy') ? '<div><b>副本：</b>' + esc(v('gw-copy')) + '</div>' : '') + '</div>' +
+          ((v('gw-signer') || jobSeal) ? '<div class="signer"><span class="signer-name">' + esc(v('gw-signer')) + '</span>' + (jobSeal ? '<span class="job-seal">' + esc(v('gw-signer')) + '</span>' : '') + '</div>' : '');
+      }
 
       var css = 'body{font-family:"DFKai-SB","BiauKai","標楷體","KaiTi","TW-Kai",serif;font-size:16px;line-height:2;position:relative;} b{font-weight:bold;} ' +
         '.topbox{position:absolute;top:0;right:0;font-size:13px;line-height:1.6;} ' +
-        '.org{text-align:center;font-size:26px;font-weight:bold;letter-spacing:8px;margin:4px 0 14px;} ' +
+        '.org{text-align:center;font-size:26px;font-weight:bold;letter-spacing:10px;margin:4px 0 16px;} ' +
         '.addr{text-align:right;font-size:14px;line-height:1.7;margin-bottom:8px;} ' +
-        '.mgmt{position:relative;margin:6px 0;min-height:110px;} .sep{border:0;border-top:1.5px solid #000;margin:10px 0;} ' +
-        '.subject{font-size:18px;margin:14px 0;} .explain{margin:14px 0;} .explain-body{white-space:pre-wrap;margin-top:4px;} ' +
+        '.sep{border:0;border-top:1.5px solid #000;margin:10px 0;} ' +
+        '.mgmt{position:relative;margin:6px 0;min-height:120px;} ' +
+        '.anno-head{display:flex;justify-content:space-between;align-items:center;min-height:200px;margin:10px 0;} .anno-meta{font-size:16px;} ' +
+        '.seal-box{display:flex;align-items:center;justify-content:center;margin-right:36px;} .anno-signer{margin-top:44px;font-size:18px;letter-spacing:4px;} ' +
+        '.seg{display:flex;margin:12px 0;font-size:16px;} .seg-label{flex:0 0 auto;} .seg-body{flex:1;white-space:pre-wrap;} ' +
         '.copies{margin-top:24px;} .signer{text-align:center;margin-top:50px;} .signer-name{font-size:19px;letter-spacing:6px;vertical-align:middle;} ' +
-        '.gov-seal{position:absolute;right:40px;top:50%;transform:translateY(-50%);width:100px;height:100px;box-sizing:border-box;' +
-        'border:3px solid #c1121f;color:#c1121f;display:flex;align-items:center;justify-content:center;text-align:center;' +
-        'writing-mode:vertical-rl;text-orientation:upright;font-family:"LiSu","DFLiShu-XB","STLiti","隸書","BiauKai",serif;' +
-        'font-weight:bold;font-size:19px;letter-spacing:3px;line-height:1.25;padding:6px;box-shadow:inset 0 0 0 1px #c1121f;} ' +
-        '.job-seal{display:inline-block;border:2px solid #12409a;color:#12409a;border-radius:3px;writing-mode:vertical-rl;text-orientation:upright;' +
-        'height:96px;padding:8px 6px;font-weight:bold;font-size:15px;letter-spacing:2px;line-height:1.4;margin-left:26px;vertical-align:middle;' +
-        'font-family:"BiauKai","標楷體",serif;}';
+        '.seal-mark{width:108px;height:108px;box-sizing:border-box;border:3px solid #c1121f;color:#c1121f;display:flex;align-items:center;justify-content:center;text-align:center;' +
+        'writing-mode:vertical-rl;text-orientation:upright;font-family:"LiSu","DFLiShu-XB","STLiti","隸書","BiauKai",serif;font-weight:bold;font-size:20px;letter-spacing:3px;line-height:1.25;padding:6px;box-shadow:inset 0 0 0 1px #c1121f;} ' +
+        '.seal-abs{position:absolute;right:40px;top:50%;transform:translateY(-50%);} ' +
+        '.job-seal{display:inline-block;border:2px solid #12409a;color:#12409a;border-radius:3px;writing-mode:vertical-rl;text-orientation:upright;height:96px;padding:8px 6px;font-weight:bold;font-size:15px;letter-spacing:2px;line-height:1.4;margin-left:26px;vertical-align:middle;font-family:"BiauKai","標楷體",serif;}';
       printDoc('公文', html, css);
     }
 
@@ -1051,7 +1064,7 @@
         if (t === '#t-announce') loadAnnounce();
         if (t === '#t-events') loadEvents();
         if (t === '#t-roster') loadSettings();
-        if (t === '#t-gongwen') { var gd = document.getElementById('gw-date'); if (!gd.value) gd.value = new Date().toISOString().slice(0, 10); }
+        if (t === '#t-gongwen') { var gd = document.getElementById('gw-date'); if (!gd.value) gd.value = new Date().toISOString().slice(0, 10); gwToggle(); }
         if (t === '#t-calendar') loadCal();
         if (t === '#t-venue') { loadVenuePending(); loadVenueAll(); }
         if (t === '#t-vset') { loadClosed(); loadSettings(); }
