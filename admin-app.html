@@ -92,7 +92,9 @@
         <div class="col-md-3 form-check d-flex align-items-center ps-4">
           <input id="an-pinned" type="checkbox" class="form-check-input me-2" /><label class="form-check-label">置頂</label>
         </div>
-        <div class="col-12"><textarea id="an-body" class="form-control" rows="3" placeholder="內容"></textarea></div>
+        <div class="col-6 col-md-3"><input id="an-atitle" class="form-control" placeholder="發佈人職稱" /></div>
+        <div class="col-6 col-md-3"><input id="an-aname" class="form-control" placeholder="發佈人姓名" /></div>
+        <div class="col-12"><textarea id="an-body" class="form-control" rows="3" placeholder="內容（支援 Markdown）"></textarea></div>
       </div>
       <button class="btn btn-primary mt-2" onclick="saveAnnounce()">儲存</button>
       <button class="btn btn-outline-secondary mt-2" onclick="resetAnnounce()">清空</button>
@@ -116,7 +118,9 @@
         <div class="col-12 col-md-6"><input id="ev-title" class="form-control form-control-sm" placeholder="標題" /></div>
         <div class="col-6 col-md-3"><input id="ev-date" type="date" class="form-control form-control-sm" /></div>
         <div class="col-6 col-md-3"><div class="input-group input-group-sm"><span class="input-group-text">排序</span><input id="ev-order" type="number" class="form-control" value="0" /></div></div>
-        <div class="col-12"><input id="ev-image" class="form-control form-control-sm" placeholder="圖片網址" /></div>
+        <div class="col-12"><input id="ev-image" class="form-control form-control-sm" placeholder="圖片網址（建議 1:1 正方形，1200×1200）" /></div>
+        <div class="col-6 col-md-3"><input id="ev-atitle" class="form-control form-control-sm" placeholder="發佈人職稱" /></div>
+        <div class="col-6 col-md-3"><input id="ev-aname" class="form-control form-control-sm" placeholder="發佈人姓名" /></div>
         <div class="col-12"><input id="ev-summary" class="form-control form-control-sm" placeholder="卡片摘要（選填）" /></div>
         <div class="col-12"><textarea id="ev-body" class="form-control form-control-sm" rows="4" placeholder="詳細內容（支援 Markdown）"></textarea></div>
         <div class="col-12 form-check ms-2"><input id="ev-published" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">發布（顯示於首頁）</label></div>
@@ -156,13 +160,18 @@
 
     <!-- 場地設定 -->
     <div class="tab-pane fade" id="t-vset">
-      <h5>開放借用區間</h5>
-      <div class="input-group mb-3" style="max-width:360px">
-        <span class="input-group-text">開放未來</span>
-        <input id="set-window" type="number" class="form-control" />
-        <span class="input-group-text">天內</span>
-        <button class="btn btn-primary" onclick="saveSetting('venue_open_window_days', document.getElementById('set-window').value)">儲存</button>
+      <h5>開放借用區間（可分別設定）</h5>
+      <div class="row g-2 align-items-end mb-1" style="max-width:680px">
+        <div class="col-auto fw-bold" style="width:110px">3F 學開</div>
+        <div class="col-auto"><label class="form-label mb-0 small">至少幾天前</label><input id="v3f-min" type="number" class="form-control form-control-sm" style="width:120px" /></div>
+        <div class="col-auto"><label class="form-label mb-0 small">開放未來幾天</label><input id="v3f-win" type="number" class="form-control form-control-sm" style="width:130px" /></div>
       </div>
+      <div class="row g-2 align-items-end mb-2" style="max-width:680px">
+        <div class="col-auto fw-bold" style="width:110px">207 微學開</div>
+        <div class="col-auto"><label class="form-label mb-0 small">至少幾天前</label><input id="v207-min" type="number" class="form-control form-control-sm" style="width:120px" /></div>
+        <div class="col-auto"><label class="form-label mb-0 small">開放未來幾天</label><input id="v207-win" type="number" class="form-control form-control-sm" style="width:130px" /></div>
+      </div>
+      <button class="btn btn-primary btn-sm mb-3" onclick="saveVenueRules()">儲存借用區間</button>
 
       <h5>不開放借用時段（封鎖）</h5>
       <div class="row g-2 align-items-end mb-2">
@@ -176,16 +185,20 @@
       <div id="closed-list"></div>
 
       <hr />
-      <h5>207 微學開 借用白名單</h5>
-      <div class="form-check form-switch mb-2">
-        <input id="wl-toggle" class="form-check-input" type="checkbox" onchange="saveSetting('v207_use_whitelist', this.checked ? 'true':'false')" />
-        <label class="form-check-label">啟用白名單（僅名單內學號可借用 207）</label>
-      </div>
-      <p class="text-muted small mb-1">白名單放在另一個 Google Sheet（第一個工作表 A 欄為學號，不分大小寫）。此處貼上該試算表連結即可，系統借用時即時讀取，無需手動加入。請將該試算表共用給 ntusssa2 帳號（或設為「知道連結的任何人可檢視」）。</p>
+      <h5>學生名單（可用於各項檢核）</h5>
+      <p class="text-muted small mb-1">學生名單放在另一個 Google Sheet（第一個工作表 A 欄為學號，不分大小寫）。此處貼上連結即可，系統檢核時即時讀取。請將該試算表共用給 ntusssa2 帳號（或設為「知道連結的任何人可檢視」）。</p>
       <div class="input-group mb-2" style="max-width:680px">
-        <span class="input-group-text">白名單 Sheet 連結</span>
+        <span class="input-group-text">學生名單 Sheet 連結</span>
         <input id="wl-url" class="form-control" placeholder="https://docs.google.com/spreadsheets/d/..." />
         <button class="btn btn-primary" onclick="saveSetting('v207_whitelist_url', document.getElementById('wl-url').value)">儲存</button>
+      </div>
+      <div class="form-check form-switch mb-1">
+        <input id="wl-toggle" class="form-check-input" type="checkbox" onchange="saveSetting('v207_use_whitelist', this.checked ? 'true':'false')" />
+        <label class="form-check-label">207 微學開 借用時檢核學生名單</label>
+      </div>
+      <div class="form-check form-switch mb-2">
+        <input id="lk-roster" class="form-check-input" type="checkbox" onchange="saveSetting('locker_use_roster', this.checked ? 'true':'false')" />
+        <label class="form-check-label">院櫃借用時檢核學生名單</label>
       </div>
     </div>
 
@@ -270,6 +283,20 @@
         <button class="btn btn-primary" onclick="saveSetting('locker_deposit', document.getElementById('set-deposit').value)">儲存</button>
       </div>
 
+      <h5>院櫃收據編號（下一個）</h5>
+      <p class="text-muted small mb-1">每筆借用會自動取號（三位數，999 後循環）。可在此調整目前編號。</p>
+      <div class="input-group mb-3" style="max-width:320px">
+        <span class="input-group-text">下一號</span>
+        <input id="set-receipt" type="number" class="form-control" />
+        <button class="btn btn-primary" onclick="saveSetting('locker_receipt_next', document.getElementById('set-receipt').value)">儲存</button>
+      </div>
+
+      <hr />
+      <h5>隱私權條款</h5>
+      <p class="text-muted small mb-1">支援 Markdown。留空則使用系統預設條款。</p>
+      <textarea id="set-privacy" class="form-control mb-2" rows="8" style="max-width:820px"></textarea>
+      <button class="btn btn-primary btn-sm" onclick="saveSetting('privacy_content', document.getElementById('set-privacy').value)">儲存隱私權條款</button>
+
       <div id="admin-mgmt" class="d-none">
       <hr />
       <h5>管理員名單</h5>
@@ -320,7 +347,7 @@
     var WORKER_URL = 'https://ntu-coss-api.ntusssa2.workers.dev';
     var CLIENT_ID = '980997931795-8aq3kc0ca3eqovdocb01o646f4effrgi.apps.googleusercontent.com';
     var OWNERS = ['ntusssa2@gmail.com', 'morgan930906@gmail.com']; // 可調整管理員名單的擁有者
-    var TOKEN = null, ME = '';
+    var TOKEN = null, ME = '', MEPROF = null;
 
     // 用 Bootstrap 的 d-none/d-flex 切換（.d-flex 帶 !important，不能只改 style.display）
     function showGate(msg) {
@@ -344,6 +371,7 @@
         document.getElementById('admin-email').textContent = email;
         enterApp();
         applyOwnerUI();
+        call('getMe').then(function (p) { MEPROF = p || {}; resetAnnounce(); }).catch(function () {});
         loadAnnounce();
       }).catch(function (e) {
         TOKEN = null;
@@ -418,13 +446,21 @@
       document.getElementById('an-date').value = r.date;
       document.getElementById('an-body').value = r.body;
       document.getElementById('an-pinned').checked = r.pinned === 'true';
+      document.getElementById('an-atitle').value = r.authorTitle || '';
+      document.getElementById('an-aname').value = r.authorName || '';
     }
-    function resetAnnounce() { ['an-id', 'an-title', 'an-date', 'an-body'].forEach(function (i) { document.getElementById(i).value = ''; }); document.getElementById('an-pinned').checked = false; }
+    function resetAnnounce() {
+      ['an-id', 'an-title', 'an-date', 'an-body'].forEach(function (i) { document.getElementById(i).value = ''; });
+      document.getElementById('an-pinned').checked = false;
+      document.getElementById('an-atitle').value = (MEPROF && MEPROF.title) || '';
+      document.getElementById('an-aname').value = (MEPROF && MEPROF.name) || '';
+    }
     function saveAnnounce() {
       call('saveAnnouncement', {
         id: document.getElementById('an-id').value, title: document.getElementById('an-title').value,
         date: document.getElementById('an-date').value, body: document.getElementById('an-body').value,
-        pinned: document.getElementById('an-pinned').checked
+        pinned: document.getElementById('an-pinned').checked,
+        authorTitle: document.getElementById('an-atitle').value, authorName: document.getElementById('an-aname').value
       }).then(function () { notify('已儲存'); resetAnnounce(); loadAnnounce(); });
     }
     function delAnnounce(id) { if (confirm('確定刪除？')) call('deleteAnnouncement', id).then(function () { loadAnnounce(); }); }
@@ -612,9 +648,9 @@
     function loadProjPending() {
       call('listProjector').then(function (rows) {
         var pend = rows.filter(function (r) { return r.status === 'pending'; });
-        document.getElementById('proj-pending').innerHTML = pend.length ? '<table class="table table-sm table-bordered align-middle"><thead><tr><th>姓名</th><th>系級/學號</th><th>事由</th><th>期間</th><th>操作</th></tr></thead><tbody>' +
+        document.getElementById('proj-pending').innerHTML = pend.length ? '<table class="table table-sm table-bordered align-middle"><thead><tr><th>系學會</th><th>姓名</th><th>系級/學號</th><th>事由</th><th>期間</th><th>操作</th></tr></thead><tbody>' +
           pend.map(function (r) {
-            return '<tr><td>' + esc(r.borrowerName) + '</td><td>' + esc(r.dept) + '<br>' + esc(r.studentId) + '</td><td>' + esc(r.purpose) + '</td><td>' + esc(r.fromDate) + ' ~ ' + esc(r.toDate) + '</td>' +
+            return '<tr><td>' + esc(r.unit) + '</td><td>' + esc(r.borrowerName) + '</td><td>' + esc(r.dept) + '<br>' + esc(r.studentId) + '</td><td>' + esc(r.purpose) + '</td><td>' + esc(r.fromDate) + ' ~ ' + esc(r.toDate) + '</td>' +
               '<td><button class="btn btn-sm btn-success" onclick="approveProj(\'' + r.id + '\')">核准</button> ' +
               '<button class="btn btn-sm btn-danger" onclick="rejectProj(\'' + r.id + '\')">拒絕</button></td></tr>';
           }).join('') + '</tbody></table>' : '<p class="text-muted">沒有待審核申請。</p>';
@@ -641,12 +677,29 @@
     function loadSettings() {
       call('getSettingsAll').then(function (rows) {
         var m = {}; rows.forEach(function (r) { m[r.key] = r.value; });
-        document.getElementById('set-window').value = m.venue_open_window_days || '30';
+        var def = m.venue_open_window_days || '30';
+        if (document.getElementById('v3f-min')) {
+          document.getElementById('v3f-min').value = m.v3f_min_days || '3';
+          document.getElementById('v3f-win').value = m.v3f_window_days || def;
+          document.getElementById('v207-min').value = m.v207_min_days || '0';
+          document.getElementById('v207-win').value = m.v207_window_days || def;
+        }
         document.getElementById('set-regfolder').value = m.regulations_folder_id || '';
         document.getElementById('set-deposit').value = m.locker_deposit || '100';
+        if (document.getElementById('set-receipt')) document.getElementById('set-receipt').value = m.locker_receipt_next || '1';
         document.getElementById('wl-toggle').checked = String(m.v207_use_whitelist) === 'true';
+        if (document.getElementById('lk-roster')) document.getElementById('lk-roster').checked = String(m.locker_use_roster) === 'true';
+        if (document.getElementById('set-privacy')) document.getElementById('set-privacy').value = m.privacy_content || '';
         document.getElementById('wl-url').value = m.v207_whitelist_url || '';
       });
+    }
+    function saveVenueRules() {
+      Promise.all([
+        call('saveSetting', 'v3f_min_days', document.getElementById('v3f-min').value || '0'),
+        call('saveSetting', 'v3f_window_days', document.getElementById('v3f-win').value || '30'),
+        call('saveSetting', 'v207_min_days', document.getElementById('v207-min').value || '0'),
+        call('saveSetting', 'v207_window_days', document.getElementById('v207-win').value || '30'),
+      ]).then(function () { notify('已儲存借用區間'); });
     }
     function saveSetting(key, val) { call('saveSetting', key, val).then(function () { notify('已儲存'); }); }
     function isOwner() { return OWNERS.indexOf(ME) !== -1; }
@@ -795,6 +848,8 @@
         body: document.getElementById('ev-body').value,
         order: document.getElementById('ev-order').value,
         published: document.getElementById('ev-published').checked,
+        authorTitle: document.getElementById('ev-atitle').value,
+        authorName: document.getElementById('ev-aname').value,
       };
     }
     function saveEv() {
@@ -810,11 +865,15 @@
       document.getElementById('ev-body').value = r.body || '';
       document.getElementById('ev-order').value = r.order || '0';
       document.getElementById('ev-published').checked = String(r.published) === 'true';
+      document.getElementById('ev-atitle').value = r.authorTitle || '';
+      document.getElementById('ev-aname').value = r.authorName || '';
     }
     function resetEv() {
       ['ev-id', 'ev-title', 'ev-image', 'ev-date', 'ev-summary', 'ev-body'].forEach(function (id) { document.getElementById(id).value = ''; });
       document.getElementById('ev-order').value = '0';
       document.getElementById('ev-published').checked = true;
+      document.getElementById('ev-atitle').value = (MEPROF && MEPROF.title) || '';
+      document.getElementById('ev-aname').value = (MEPROF && MEPROF.name) || '';
     }
     function delEv(id) { if (confirm('刪除此活動？')) call('deleteEvent', id).then(function () { loadEvents(); }); }
 
