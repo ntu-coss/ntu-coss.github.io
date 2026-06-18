@@ -68,6 +68,7 @@
 
   <ul class="nav nav-tabs" role="tablist">
     <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-announce" type="button">公告</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-home" type="button">首頁</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-calendar" type="button">行事曆</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-venue" type="button">場地審核</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-vset" type="button">場地設定</button></li>
@@ -96,6 +97,33 @@
       <button class="btn btn-primary mt-2" onclick="saveAnnounce()">儲存</button>
       <button class="btn btn-outline-secondary mt-2" onclick="resetAnnounce()">清空</button>
       <hr /><div id="an-list"></div>
+    </div>
+
+    <!-- 首頁（橫幅 + 活動） -->
+    <div class="tab-pane fade" id="t-home">
+      <h5>首頁橫幅</h5>
+      <div class="row g-2 mb-2" style="max-width:760px">
+        <div class="col-12"><label class="form-label mb-0 small">標題後方圖片網址</label><input id="hero-image" class="form-control form-control-sm" placeholder="https://...（留空則不顯示圖片）" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">高度(px)</label><input id="hero-height" type="number" class="form-control form-control-sm" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">標題文字顏色</label><input id="hero-color" type="color" class="form-control form-control-sm form-control-color" /></div>
+      </div>
+      <button class="btn btn-primary btn-sm mb-3" onclick="saveHero()">儲存橫幅設定</button>
+
+      <hr />
+      <h5>活動資訊（首頁輪播）</h5>
+      <input type="hidden" id="ev-id" />
+      <div class="row g-2" style="max-width:820px">
+        <div class="col-12 col-md-6"><input id="ev-title" class="form-control form-control-sm" placeholder="標題" /></div>
+        <div class="col-6 col-md-3"><input id="ev-date" type="date" class="form-control form-control-sm" /></div>
+        <div class="col-6 col-md-3"><div class="input-group input-group-sm"><span class="input-group-text">排序</span><input id="ev-order" type="number" class="form-control" value="0" /></div></div>
+        <div class="col-12"><input id="ev-image" class="form-control form-control-sm" placeholder="圖片網址" /></div>
+        <div class="col-12"><input id="ev-summary" class="form-control form-control-sm" placeholder="卡片摘要（選填）" /></div>
+        <div class="col-12"><textarea id="ev-body" class="form-control form-control-sm" rows="4" placeholder="詳細內容（支援 Markdown）"></textarea></div>
+        <div class="col-12 form-check ms-2"><input id="ev-published" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">發布（顯示於首頁）</label></div>
+      </div>
+      <button class="btn btn-primary mt-2" onclick="saveEv()">儲存活動</button>
+      <button class="btn btn-outline-secondary mt-2" onclick="resetEv()">清空</button>
+      <hr /><div id="ev-list"></div>
     </div>
 
     <!-- 行事曆 -->
@@ -424,9 +452,10 @@
     function vname(v) { return v === '3F' ? '3F 學開' : '207 微學開'; }
     function loadVenuePending() {
       call('listVenueBookings', { status: 'pending' }).then(function (rows) {
-        document.getElementById('venue-pending').innerHTML = rows.length ? '<table class="table table-sm table-bordered align-middle"><thead><tr><th>場地</th><th>單位/聯絡人</th><th>事由</th><th>系級/學號</th><th>時間</th><th>操作</th></tr></thead><tbody>' +
+        document.getElementById('venue-pending').innerHTML = rows.length ? '<table class="table table-sm table-bordered align-middle"><thead><tr><th>場地</th><th>單位/聯絡人</th><th>事由</th><th>企劃書</th><th>系級/學號</th><th>時間</th><th>操作</th></tr></thead><tbody>' +
           rows.map(function (r) {
-            return '<tr><td>' + vname(r.venue) + '</td><td>' + esc(r.org) + '<br>' + esc(r.contactName) + '</td><td>' + esc(r.purpose) + '</td><td>' + esc(r.dept) + '<br>' + esc(r.studentId) + '</td><td>' + fmt(r.startISO) + '<br>~ ' + fmt(r.endISO) + '</td>' +
+            var prop = r.proposalUrl ? '<a href="' + esc(r.proposalUrl) + '" target="_blank" rel="noreferrer">檢視</a>' : '<span class="text-muted">—</span>';
+            return '<tr><td>' + vname(r.venue) + '</td><td>' + esc(r.org) + '<br>' + esc(r.contactName) + '</td><td>' + esc(r.purpose) + '</td><td>' + prop + '</td><td>' + esc(r.dept) + '<br>' + esc(r.studentId) + '</td><td>' + fmt(r.startISO) + '<br>~ ' + fmt(r.endISO) + '</td>' +
               '<td><button class="btn btn-sm btn-success" onclick="approveB(\'' + r.id + '\')">核准</button> ' +
               '<button class="btn btn-sm btn-danger" onclick="rejectB(\'' + r.id + '\')">拒絕</button></td></tr>';
           }).join('') + '</tbody></table>' : '<p class="text-muted">沒有待審核申請。</p>';
@@ -726,10 +755,74 @@
       call('saveSetting', key, document.getElementById('pt-' + key).value).then(function () { notify('已儲存'); });
     }
 
+    // ---------- 首頁（橫幅 + 活動） ----------
+    function loadHome() {
+      call('getSettingsAll').then(function (rows) {
+        var m = {}; rows.forEach(function (r) { m[r.key] = r.value; });
+        document.getElementById('hero-image').value = m.home_hero_image || '';
+        document.getElementById('hero-height').value = m.home_hero_height || '220';
+        document.getElementById('hero-color').value = m.home_title_color || '#1d3557';
+      });
+      loadEvents();
+    }
+    function saveHero() {
+      Promise.all([
+        call('saveSetting', 'home_hero_image', document.getElementById('hero-image').value),
+        call('saveSetting', 'home_hero_height', document.getElementById('hero-height').value),
+        call('saveSetting', 'home_title_color', document.getElementById('hero-color').value),
+      ]).then(function () { notify('已儲存橫幅設定'); });
+    }
+    function loadEvents() {
+      call('listEvents').then(function (rows) {
+        document.getElementById('ev-list').innerHTML = rows.length ? rows.map(function (r) {
+          return '<div class="card mb-2"><div class="card-body py-2 d-flex align-items-center gap-2">' +
+            (r.image ? '<img src="' + esc(r.image) + '" style="width:64px;height:48px;object-fit:cover;border-radius:4px">' : '') +
+            '<div class="flex-grow-1"><b>' + esc(r.title) + '</b> ' + (String(r.published) === 'true' ? '<span class="badge bg-success">已發布</span>' : '<span class="badge bg-secondary">未發布</span>') +
+            '<div class="small text-muted">' + esc(r.date) + '　排序：' + esc(r.order) + '</div></div>' +
+            '<button class="btn btn-sm btn-outline-primary" onclick=\'editEv(' + JSON.stringify(r).replace(/'/g, "&#39;") + ')\'>編輯</button> ' +
+            '<button class="btn btn-sm btn-outline-danger" onclick="delEv(\'' + r.id + '\')">刪除</button>' +
+            '</div></div>';
+        }).join('') : '<p class="text-muted">尚無活動。</p>';
+      });
+    }
+    function evObj() {
+      return {
+        id: document.getElementById('ev-id').value || '',
+        title: document.getElementById('ev-title').value,
+        image: document.getElementById('ev-image').value,
+        date: document.getElementById('ev-date').value,
+        summary: document.getElementById('ev-summary').value,
+        body: document.getElementById('ev-body').value,
+        order: document.getElementById('ev-order').value,
+        published: document.getElementById('ev-published').checked,
+      };
+    }
+    function saveEv() {
+      if (!document.getElementById('ev-title').value.trim()) { notify('請填寫標題', false); return; }
+      call('saveEvent', evObj()).then(function () { notify('已儲存'); resetEv(); loadEvents(); });
+    }
+    function editEv(r) {
+      document.getElementById('ev-id').value = r.id || '';
+      document.getElementById('ev-title').value = r.title || '';
+      document.getElementById('ev-image').value = r.image || '';
+      document.getElementById('ev-date').value = r.date || '';
+      document.getElementById('ev-summary').value = r.summary || '';
+      document.getElementById('ev-body').value = r.body || '';
+      document.getElementById('ev-order').value = r.order || '0';
+      document.getElementById('ev-published').checked = String(r.published) === 'true';
+    }
+    function resetEv() {
+      ['ev-id', 'ev-title', 'ev-image', 'ev-date', 'ev-summary', 'ev-body'].forEach(function (id) { document.getElementById(id).value = ''; });
+      document.getElementById('ev-order').value = '0';
+      document.getElementById('ev-published').checked = true;
+    }
+    function delEv(id) { if (confirm('刪除此活動？')) call('deleteEvent', id).then(function () { loadEvents(); }); }
+
     // ---------- 分頁載入 ----------
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (btn) {
       btn.addEventListener('shown.bs.tab', function (e) {
         var t = e.target.getAttribute('data-bs-target');
+        if (t === '#t-home') loadHome();
         if (t === '#t-calendar') loadCal();
         if (t === '#t-venue') { loadVenuePending(); loadVenueAll(); }
         if (t === '#t-vset') { loadClosed(); loadSettings(); }
