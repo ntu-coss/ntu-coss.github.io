@@ -284,6 +284,7 @@
       document.getElementById('gate-msg').textContent = msg || '';
     }
     function onSignIn(resp) {
+      if (!resp || !resp.credential) { showGate('未取得 Google 憑證，請重試。'); return; }
       TOKEN = resp.credential;
       document.getElementById('gate-msg').textContent = '驗證中…';
       call('whoami').then(function (email) {
@@ -294,7 +295,7 @@
         loadAnnounce();
       }).catch(function (e) {
         TOKEN = null;
-        showGate(e && e.message ? e.message : '登入失敗。');
+        showGate('登入失敗：' + (e && e.message ? e.message : e));
       });
     }
     function signOut() {
@@ -326,8 +327,11 @@
     }
     function call(name) {
       var args = Array.prototype.slice.call(arguments, 1);
+      var ctrl = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 15000);
       return fetch(WORKER_URL + '/api/admin', {
         method: 'POST',
+        signal: ctrl.signal,
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN },
         body: JSON.stringify({ action: name, args: args }),
       }).then(function (r) {
@@ -336,7 +340,9 @@
           if (!r.ok) { notify(data.error || ('HTTP ' + r.status), false); throw new Error(data.error || ('HTTP ' + r.status)); }
           return data.result;
         });
-      });
+      }, function (err) {
+        throw new Error(err && err.name === 'AbortError' ? '連線逾時（15 秒無回應）。' : ('連線失敗：' + (err && err.message || err)));
+      }).finally(function () { clearTimeout(timer); });
     }
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
     function fmt(iso) { var d = new Date(iso); return isNaN(d) ? esc(iso) : d.toLocaleString('zh-TW', { hour12: false }); }
