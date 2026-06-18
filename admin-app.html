@@ -281,6 +281,10 @@
           <select id="gw-type" class="form-select form-select-sm"><option>函</option><option>書函</option><option>公告</option><option>開會通知單</option></select></div>
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">發文日期</label><input id="gw-date" type="date" class="form-control form-control-sm" /></div>
         <div class="col-12 col-md-6"><label class="form-label mb-0 small">發文字號</label><input id="gw-no" class="form-control form-control-sm" placeholder="社科院學生會字第 ___ 號" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">檔號</label><input id="gw-file" class="form-control form-control-sm" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">保存年限</label><input id="gw-keep" class="form-control form-control-sm" /></div>
+        <div class="col-12"><label class="form-label mb-0 small">地址</label><input id="gw-addr" class="form-control form-control-sm" placeholder="106 臺北市大安區羅斯福路四段一號" /></div>
+        <div class="col-12"><label class="form-label mb-0 small">聯絡方式</label><input id="gw-contact" class="form-control form-control-sm" placeholder="承辦人：○○○　電話：○○　Email：ntusssa2@gmail.com" /></div>
         <div class="col-12"><label class="form-label mb-0 small">受文者</label><input id="gw-to" class="form-control form-control-sm" /></div>
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">速別</label><input id="gw-speed" class="form-control form-control-sm" value="普通件" /></div>
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">密等</label><input id="gw-secret" class="form-control form-control-sm" value="普通" /></div>
@@ -995,28 +999,37 @@
       return '中華民國 ' + (d.getFullYear() - 1911) + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
     }
     function genGongwen() {
-      var v = function (id) { return document.getElementById(id).value.trim(); };
-      var meta = [['受文者', v('gw-to')], ['發文日期', rocDate(v('gw-date'))], ['發文字號', v('gw-no')],
-        ['速別', v('gw-speed')], ['密等及解密條件或保密期限', v('gw-secret')], ['附件', v('gw-attach')]];
-      var metaHtml = meta.filter(function (r) { return r[1]; }).map(function (r) { return '<div><b>' + r[0] + '：</b>' + esc(r[1]) + '</div>'; }).join('');
-      var html = '<div style="text-align:center;font-size:22px;font-weight:bold;letter-spacing:6px;margin-bottom:6px">國立臺灣大學社會科學院學生會　' + esc(v('gw-type')) + '</div>' +
-        '<hr style="border:0;border-top:2px solid #000;margin:6px 0">' +
-        '<div style="margin:10px 0">' + metaHtml + '</div>' +
-        '<hr style="border:0;border-top:1px solid #000;margin:6px 0">' +
-        (v('gw-subject') ? '<div style="margin:14px 0;font-size:16px"><b>主旨：</b>' + esc(v('gw-subject')).replace(/\n/g, '<br>') + '</div>' : '') +
-        (v('gw-body') ? '<div style="margin:14px 0"><b>說明：</b><div style="white-space:pre-wrap;margin-top:4px">' + esc(v('gw-body')) + '</div></div>' : '') +
-        (v('gw-orig') ? '<div style="margin-top:20px"><b>正本：</b>' + esc(v('gw-orig')) + '</div>' : '') +
-        (v('gw-copy') ? '<div><b>副本：</b>' + esc(v('gw-copy')) + '</div>' : '');
+      var v = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+      var line = function (label, val) { return val ? '<div><b>' + esc(label) + '：</b>' + esc(val).replace(/\n/g, '<br>') + '</div>' : ''; };
       var seal = document.getElementById('gw-seal').checked && v('gw-sealtext');
-      if (v('gw-signer') || seal) {
-        html += '<div style="text-align:center;margin-top:54px;">' +
-          (v('gw-signer') ? '<span style="font-size:19px;letter-spacing:6px;vertical-align:middle">' + esc(v('gw-signer')) + '</span>' : '') +
-          (seal ? '<span class="seal" style="margin-left:30px;vertical-align:middle">' + esc(v('gw-sealtext')) + '</span>' : '') +
-          '</div>';
-      }
-      var css = 'body{font-family:"DFKai-SB","BiauKai","標楷體","KaiTi","TW-Kai",serif;font-size:16px;} b{font-weight:bold;} ' +
-        '.seal{display:inline-block;border:3px solid #12409a;color:#12409a;border-radius:6px;writing-mode:vertical-rl;text-orientation:upright;' +
-        'height:120px;padding:8px 10px;font-weight:bold;font-size:15px;letter-spacing:2px;line-height:1.5;box-shadow:inset 0 0 0 1px #12409a;transform:rotate(-3deg);}';
+
+      var top = (v('gw-file') || v('gw-keep'))
+        ? '<div class="topbox">檔　號：' + esc(v('gw-file')) + '<br>保存年限：' + esc(v('gw-keep')) + '</div>' : '';
+      var addr = (v('gw-addr') || v('gw-contact'))
+        ? '<div class="addr">' + (v('gw-addr') ? '地址：' + esc(v('gw-addr')) + '<br>' : '') + (v('gw-contact') ? '聯絡方式：' + esc(v('gw-contact')) : '') + '</div>' : '';
+      var mgmt = line('受文者', v('gw-to')) + line('發文日期', rocDate(v('gw-date'))) + line('發文字號', v('gw-no')) +
+        line('速別', v('gw-speed')) + line('密等及解密條件或保密期限', v('gw-secret')) + line('附件', v('gw-attach'));
+
+      var html = top +
+        '<h1 class="org">國立臺灣大學社會科學院學生會　' + esc(v('gw-type')) + '</h1>' +
+        addr +
+        '<div class="mgmt">' + mgmt + '</div>' +
+        '<hr class="sep">' +
+        (v('gw-subject') ? '<div class="subject"><b>主旨：</b>' + esc(v('gw-subject')).replace(/\n/g, '<br>') + '</div>' : '') +
+        (v('gw-body') ? '<div class="explain"><b>說明：</b><div class="explain-body">' + esc(v('gw-body')) + '</div></div>' : '') +
+        '<div class="copies">' + (v('gw-orig') ? '<div><b>正本：</b>' + esc(v('gw-orig')) + '</div>' : '') + (v('gw-copy') ? '<div><b>副本：</b>' + esc(v('gw-copy')) + '</div>' : '') + '</div>' +
+        ((v('gw-signer') || seal) ? '<div class="signer">' +
+          (v('gw-signer') ? '<span class="signer-name">' + esc(v('gw-signer')) + '</span>' : '') +
+          (seal ? '<span class="seal">' + esc(v('gw-sealtext')) + '</span>' : '') + '</div>' : '');
+
+      var css = 'body{font-family:"DFKai-SB","BiauKai","標楷體","KaiTi","TW-Kai",serif;font-size:16px;line-height:2;position:relative;} b{font-weight:bold;} ' +
+        '.topbox{position:absolute;top:0;right:0;font-size:13px;line-height:1.6;} ' +
+        '.org{text-align:center;font-size:26px;font-weight:bold;letter-spacing:8px;margin:4px 0 14px;} ' +
+        '.addr{text-align:right;font-size:14px;line-height:1.7;margin-bottom:8px;} ' +
+        '.mgmt{margin:6px 0;} .sep{border:0;border-top:1.5px solid #000;margin:10px 0;} ' +
+        '.subject{font-size:18px;margin:14px 0;} .explain{margin:14px 0;} .explain-body{white-space:pre-wrap;margin-top:4px;} ' +
+        '.copies{margin-top:24px;} .signer{text-align:center;margin-top:50px;} .signer-name{font-size:19px;letter-spacing:6px;vertical-align:middle;} ' +
+        '.seal{display:inline-block;border:3px solid #12409a;color:#12409a;border-radius:6px;writing-mode:vertical-rl;text-orientation:upright;height:120px;padding:8px 10px;font-weight:bold;font-size:15px;letter-spacing:2px;line-height:1.5;box-shadow:inset 0 0 0 1px #12409a;transform:rotate(-3deg);margin-left:30px;vertical-align:middle;}';
       printDoc('公文', html, css);
     }
 
