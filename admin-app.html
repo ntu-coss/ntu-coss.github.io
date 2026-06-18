@@ -123,11 +123,16 @@
         <div class="col-6 col-md-3"><input id="ev-aname" class="form-control form-control-sm" placeholder="發佈人姓名" /></div>
         <div class="col-12"><input id="ev-summary" class="form-control form-control-sm" placeholder="卡片摘要（選填）" /></div>
         <div class="col-12"><textarea id="ev-body" class="form-control form-control-sm" rows="4" placeholder="詳細內容（支援 Markdown）"></textarea></div>
-        <div class="col-12 form-check ms-2"><input id="ev-published" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">發布（顯示於首頁）</label></div>
+        <div class="col-12 d-flex flex-wrap gap-3 ms-2">
+          <div class="form-check"><input id="ev-published" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">發布（顯示於首頁）</label></div>
+          <div class="form-check"><input id="ev-signup" type="checkbox" class="form-check-input" /><label class="form-check-label small">開放報名</label></div>
+          <div class="form-check"><input id="ev-signuproster" type="checkbox" class="form-check-input" /><label class="form-check-label small">報名須檢核學生名單</label></div>
+        </div>
       </div>
       <button class="btn btn-primary mt-2" onclick="saveEv()">儲存活動</button>
       <button class="btn btn-outline-secondary mt-2" onclick="resetEv()">清空</button>
       <hr /><div id="ev-list"></div>
+      <div id="ev-regs" class="mt-3"></div>
     </div>
 
     <!-- 行事曆 -->
@@ -833,6 +838,7 @@
             '<div class="flex-grow-1"><b>' + esc(r.title) + '</b> ' + (String(r.published) === 'true' ? '<span class="badge bg-success">已發布</span>' : '<span class="badge bg-secondary">未發布</span>') +
             '<div class="small text-muted">' + esc(r.date) + '　排序：' + esc(r.order) + '</div></div>' +
             '<button class="btn btn-sm btn-outline-primary" onclick=\'editEv(' + JSON.stringify(r).replace(/'/g, "&#39;") + ')\'>編輯</button> ' +
+            (String(r.signupOpen) === 'true' || String(r.signupRoster) === 'true' ? '<button class="btn btn-sm btn-outline-success" onclick="viewRegs(\'' + r.id + '\',\'' + esc(r.title).replace(/'/g, "&#39;") + '\')">報名名單</button> ' : '') +
             '<button class="btn btn-sm btn-outline-danger" onclick="delEv(\'' + r.id + '\')">刪除</button>' +
             '</div></div>';
         }).join('') : '<p class="text-muted">尚無活動。</p>';
@@ -848,6 +854,8 @@
         body: document.getElementById('ev-body').value,
         order: document.getElementById('ev-order').value,
         published: document.getElementById('ev-published').checked,
+        signupOpen: document.getElementById('ev-signup').checked,
+        signupRoster: document.getElementById('ev-signuproster').checked,
         authorTitle: document.getElementById('ev-atitle').value,
         authorName: document.getElementById('ev-aname').value,
       };
@@ -865,6 +873,8 @@
       document.getElementById('ev-body').value = r.body || '';
       document.getElementById('ev-order').value = r.order || '0';
       document.getElementById('ev-published').checked = String(r.published) === 'true';
+      document.getElementById('ev-signup').checked = String(r.signupOpen) === 'true';
+      document.getElementById('ev-signuproster').checked = String(r.signupRoster) === 'true';
       document.getElementById('ev-atitle').value = r.authorTitle || '';
       document.getElementById('ev-aname').value = r.authorName || '';
     }
@@ -872,10 +882,26 @@
       ['ev-id', 'ev-title', 'ev-image', 'ev-date', 'ev-summary', 'ev-body'].forEach(function (id) { document.getElementById(id).value = ''; });
       document.getElementById('ev-order').value = '0';
       document.getElementById('ev-published').checked = true;
+      document.getElementById('ev-signup').checked = false;
+      document.getElementById('ev-signuproster').checked = false;
       document.getElementById('ev-atitle').value = (MEPROF && MEPROF.title) || '';
       document.getElementById('ev-aname').value = (MEPROF && MEPROF.name) || '';
     }
     function delEv(id) { if (confirm('刪除此活動？')) call('deleteEvent', id).then(function () { loadEvents(); }); }
+    function viewRegs(eventId, title) {
+      call('listRegistrations', eventId).then(function (rows) {
+        var head = '<div class="d-flex justify-content-between align-items-center mb-1"><h6 class="mb-0">報名名單：' + esc(title) + '（' + rows.length + ' 人）</h6>' +
+          '<button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById(\'ev-regs\').innerHTML=\'\'">關閉</button></div>';
+        document.getElementById('ev-regs').innerHTML = head + (rows.length
+          ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>#</th><th>姓名</th><th>學號</th><th>系級</th><th>來源</th><th>備註</th><th>時間</th><th></th></tr></thead><tbody>' +
+            rows.map(function (r, i) {
+              return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.studentId) + '</td><td>' + esc(r.dept) + '</td><td>' + esc(r.source) + '</td><td class="small">' + esc(r.note) + '</td><td class="small text-nowrap">' + fmt(r.createdAt) + '</td>' +
+                '<td><button class="btn btn-sm btn-outline-danger" onclick="delReg(\'' + r.id + '\',\'' + eventId + '\',\'' + esc(title).replace(/'/g, "&#39;") + '\')">刪除</button></td></tr>';
+            }).join('') + '</tbody></table>'
+          : '<p class="text-muted">尚無人報名。</p>');
+      });
+    }
+    function delReg(id, eventId, title) { if (confirm('刪除此筆報名？')) call('deleteRegistration', id).then(function () { viewRegs(eventId, title); }); }
 
     // ---------- 分頁載入 ----------
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (btn) {
