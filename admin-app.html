@@ -31,6 +31,24 @@
   </style>
 </head>
 <body>
+  <!-- 前台 navbar（登入前顯示；登入後由後台頂列取代） -->
+  <nav id="public-nav" class="navbar navbar-expand-lg" style="background-color:#1d3557" data-bs-theme="dark">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="/">臺大社科院學生會</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+      <div class="collapse navbar-collapse" id="mainNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="/">首頁</a></li>
+          <li class="nav-item"><a class="nav-link" href="/regulations">法規查詢</a></li>
+          <li class="nav-item"><a class="nav-link" href="/venue">場地預約</a></li>
+          <li class="nav-item"><a class="nav-link" href="/locker">院櫃預約</a></li>
+          <li class="nav-item"><a class="nav-link" href="/projector">投影機借用</a></li>
+          <li class="nav-item"><a class="nav-link" href="/petition">陳情</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
   <!-- 登入閘門：未登入前顯示，登入成功後隱藏 -->
   <div id="signin-gate" class="d-flex align-items-center justify-content-center flex-grow-1" style="min-height:70vh">
     <div class="card shadow-sm" style="max-width:420px;width:100%">
@@ -66,51 +84,51 @@
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-act"><i class="bi bi-calendar-event me-2"></i>活動管理</button></h2>
           <div id="cat-act" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-events">活動（報名／簽到／發信）</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-events">活動（報名／簽到／發信）</button>
           </div></div>
         </div>
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-ann"><i class="bi bi-megaphone me-2"></i>公告管理</button></h2>
           <div id="cat-ann" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-announce">公告</button>
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-calendar">行事曆</button>
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-petition">陳情處理</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-announce">公告</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-calendar">行事曆</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-petition">陳情處理</button>
           </div></div>
         </div>
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-space"><i class="bi bi-door-open me-2"></i>空間管理</button></h2>
           <div id="cat-space" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-venue">場地審核</button>
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-vset">場地設定</button>
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-locker">院櫃</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-venue">場地審核</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-vset">場地設定</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-locker">院櫃</button>
           </div></div>
         </div>
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-equip"><i class="bi bi-projector me-2"></i>設備管理</button></h2>
           <div id="cat-equip" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-projector">投影機</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-projector">投影機</button>
           </div></div>
         </div>
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-page"><i class="bi bi-window-sidebar me-2"></i>頁面管理</button></h2>
           <div id="cat-page" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
-            <button class="list-group-item list-group-item-action active" data-bs-toggle="tab" data-bs-target="#t-home">首頁橫幅</button>
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-pagetext">頁面說明</button>
+            <button class="list-group-item list-group-item-action active" data-tab="#t-home">首頁橫幅</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-pagetext">頁面說明</button>
           </div></div>
         </div>
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-tool"><i class="bi bi-tools me-2"></i>幹部工具</button></h2>
           <div id="cat-tool" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-gongwen">公文產生器</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-gongwen">公文產生器</button>
           </div></div>
         </div>
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-sys"><i class="bi bi-gear me-2"></i>系統管理</button></h2>
           <div id="cat-sys" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-roster">學生名單</button>
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-email">信件範本</button>
-            <button class="list-group-item list-group-item-action" data-bs-toggle="tab" data-bs-target="#t-system">系統設定</button>
-            <button class="list-group-item list-group-item-action d-none" id="tab-audit-li" data-bs-toggle="tab" data-bs-target="#t-audit">操作紀錄</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-roster">學生名單</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-email">信件範本</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-system">系統設定</button>
+            <button class="list-group-item list-group-item-action d-none" id="tab-audit-li" data-tab="#t-audit">操作紀錄</button>
           </div></div>
         </div>
       </div>
@@ -459,6 +477,7 @@
     // 用 Bootstrap 的 d-none/d-flex 切換（.d-flex 帶 !important，不能只改 style.display）
     function showGate(msg) {
       document.getElementById('app').classList.add('d-none');
+      var pn = document.getElementById('public-nav'); if (pn) pn.classList.remove('d-none');
       var g = document.getElementById('signin-gate');
       g.classList.remove('d-none'); g.classList.add('d-flex');
       document.getElementById('gate-msg').textContent = msg || '';
@@ -467,6 +486,7 @@
       try { google.accounts.id.cancel(); } catch (e) {}   // 收掉殘留的 Google 提示
       var g = document.getElementById('signin-gate');
       g.classList.remove('d-flex'); g.classList.add('d-none');
+      var pn = document.getElementById('public-nav'); if (pn) pn.classList.add('d-none');
       document.getElementById('app').classList.remove('d-none');
     }
     function onSignIn(resp) {
@@ -1161,36 +1181,36 @@
       }
     }
 
-    // ---------- 分頁載入 ----------
-    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (btn) {
-      btn.addEventListener('shown.bs.tab', function (e) {
-        var t = e.target.getAttribute('data-bs-target');
-        if (t === '#t-home') loadHero();
-        if (t === '#t-announce') loadAnnounce();
-        if (t === '#t-events') loadEvents();
-        if (t === '#t-roster') loadSettings();
-        if (t === '#t-gongwen') loadGongwen();
-        if (t === '#t-calendar') loadCal();
-        if (t === '#t-venue') { loadVenuePending(); loadVenueAll(); }
-        if (t === '#t-vset') { loadClosed(); loadSettings(); }
-        if (t === '#t-locker') loadLocker();
-        if (t === '#t-projector') loadProjPending();
-        if (t === '#t-petition') loadPetitions();
-        if (t === '#t-email') loadEmail();
-        if (t === '#t-pagetext') loadPageTexts();
-        if (t === '#t-system') { loadSettings(); loadAdmins(); }
-        if (t === '#t-audit' && isOwner()) loadAudit();
-      });
-    });
-
-    // 側邊選單：點選功能後標記 active 並關閉抽屜
+    // ---------- 分頁切換（手動控制，避免跨群組殘留） ----------
+    function runTabLoad(t) {
+      if (t === '#t-home') loadHero();
+      if (t === '#t-announce') loadAnnounce();
+      if (t === '#t-events') loadEvents();
+      if (t === '#t-roster') loadSettings();
+      if (t === '#t-gongwen') loadGongwen();
+      if (t === '#t-calendar') loadCal();
+      if (t === '#t-venue') { loadVenuePending(); loadVenueAll(); }
+      if (t === '#t-vset') { loadClosed(); loadSettings(); }
+      if (t === '#t-locker') loadLocker();
+      if (t === '#t-projector') loadProjPending();
+      if (t === '#t-petition') loadPetitions();
+      if (t === '#t-email') loadEmail();
+      if (t === '#t-pagetext') loadPageTexts();
+      if (t === '#t-system') { loadSettings(); loadAdmins(); }
+      if (t === '#t-audit' && isOwner()) loadAudit();
+    }
+    function goTab(t) {
+      document.querySelectorAll('#app .tab-pane').forEach(function (p) { p.classList.remove('show', 'active'); });
+      var pane = document.querySelector(t);
+      if (pane) pane.classList.add('show', 'active');
+      document.querySelectorAll('#sidebar [data-tab]').forEach(function (b) { b.classList.remove('active'); });
+      var btn = document.querySelector('#sidebar [data-tab="' + t + '"]'); if (btn) btn.classList.add('active');
+      runTabLoad(t);
+      var oc = bootstrap.Offcanvas.getInstance(document.getElementById('sidebar')); if (oc) oc.hide();
+    }
     document.getElementById('sidebar').addEventListener('click', function (e) {
-      var btn = e.target.closest('[data-bs-toggle="tab"]');
-      if (!btn) return;
-      document.querySelectorAll('#sidebar [data-bs-toggle="tab"]').forEach(function (b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      var oc = bootstrap.Offcanvas.getInstance(document.getElementById('sidebar'));
-      if (oc) oc.hide();
+      var btn = e.target.closest('[data-tab]');
+      if (btn) goTab(btn.getAttribute('data-tab'));
     });
 
     // 初始載入由登入成功後的 onSignIn() 觸發
