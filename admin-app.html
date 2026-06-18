@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>社科院學生會後台</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  <style>
+    body { padding: 1rem 1.25rem; }
+    .tab-pane { padding-top: 1rem; }
+    table { font-size: .9rem; }
+    .grid-cell { width:76px;height:70px;border:2px solid #ccc;border-radius:6px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;font-size:.78rem;margin:3px;overflow:hidden;cursor:pointer;padding:2px; }
+    .grid-cell b{font-size:1rem;line-height:1.1;}
+    .grid-cell .sid{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .grid-cell.avail{background:#e9f7f5;border-color:#2a9d8f;color:#1d3557;}
+    .grid-cell.pending{background:#fff3cd;border-color:#ffca2c;color:#664d03;}
+    .grid-cell.inuse{background:#ffe1e1;border-color:#e76f51;color:#842029;}
+    .grid-cell.closed{background:#eee;border-style:dashed;color:#aaa;}
+    .grid-cell.empty{visibility:hidden;}
+    .grid-cell small{font-size:.6rem;line-height:1;}
+    .grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;}
+    .grid-inner{width:max-content;}
+    .grid-line{display:flex;}
+  </style>
+</head>
+<body>
+  <!-- 登入閘門：未登入前顯示，登入成功後隱藏 -->
+  <div id="signin-gate" class="d-flex align-items-center justify-content-center" style="min-height:80vh">
+    <div class="card shadow-sm" style="max-width:420px;width:100%">
+      <div class="card-body text-center p-4">
+        <h4 class="mb-1">社科院學生會 後台</h4>
+        <p class="text-muted small mb-3">請以管理員 Google 帳號登入</p>
+        <div id="gbtn" class="d-flex justify-content-center"></div>
+        <div id="gate-msg" class="text-danger small mt-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app" style="display:none">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">社科院學生會 後台管理</h4>
+    <span class="d-flex align-items-center gap-2">
+      <span class="badge bg-secondary" id="admin-email"></span>
+      <button class="btn btn-sm btn-outline-secondary" onclick="signOut()">登出</button>
+    </span>
+  </div>
+
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#t-announce" type="button">公告</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-calendar" type="button">行事曆</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-venue" type="button">場地審核</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-vset" type="button">場地設定</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-locker" type="button">院櫃</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-projector" type="button">投影機</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-petition" type="button">陳情</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-email" type="button">信件範本</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-pagetext" type="button">頁面說明</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-system" type="button">系統設定</button></li>
+  </ul>
+
+  <div class="tab-content">
+    <!-- 公告 -->
+    <div class="tab-pane fade show active" id="t-announce">
+      <h5>新增 / 編輯公告</h5>
+      <input type="hidden" id="an-id" />
+      <div class="row g-2">
+        <div class="col-md-6"><input id="an-title" class="form-control" placeholder="標題" /></div>
+        <div class="col-md-3"><input id="an-date" type="date" class="form-control" /></div>
+        <div class="col-md-3 form-check d-flex align-items-center ps-4">
+          <input id="an-pinned" type="checkbox" class="form-check-input me-2" /><label class="form-check-label">置頂</label>
+        </div>
+        <div class="col-12"><textarea id="an-body" class="form-control" rows="3" placeholder="內容"></textarea></div>
+      </div>
+      <button class="btn btn-primary mt-2" onclick="saveAnnounce()">儲存</button>
+      <button class="btn btn-outline-secondary mt-2" onclick="resetAnnounce()">清空</button>
+      <hr /><div id="an-list"></div>
+    </div>
+
+    <!-- 行事曆 -->
+    <div class="tab-pane fade" id="t-calendar">
+      <h5>新增 / 編輯行事曆內嵌</h5>
+      <p class="text-muted small">填入 Google 行事曆的「嵌入網址」（行事曆設定 → 整合代碼 → iframe src）。</p>
+      <input type="hidden" id="cal-id" />
+      <div class="row g-2">
+        <div class="col-md-4"><input id="cal-title" class="form-control" placeholder="標題（例：社窩公用行事曆）" /></div>
+        <div class="col-md-8"><input id="cal-url" class="form-control" placeholder="https://calendar.google.com/calendar/embed?src=..." /></div>
+      </div>
+      <button class="btn btn-primary mt-2" onclick="saveCal()">儲存</button>
+      <button class="btn btn-outline-secondary mt-2" onclick="resetCal()">清空</button>
+      <hr /><div id="cal-list"></div>
+    </div>
+
+    <!-- 場地審核 -->
+    <div class="tab-pane fade" id="t-venue">
+      <h5>3F 待審核申請</h5>
+      <div id="venue-pending"></div>
+      <hr />
+      <h5>所有預約紀錄
+        <select id="venue-filter" class="form-select form-select-sm d-inline-block w-auto ms-2" onchange="loadVenueAll()">
+          <option value="">全部</option><option value="pending">待審核</option>
+          <option value="approved">已核准</option><option value="rejected">已拒絕</option>
+        </select>
+      </h5>
+      <div id="venue-all"></div>
+    </div>
+
+    <!-- 場地設定 -->
+    <div class="tab-pane fade" id="t-vset">
+      <h5>開放借用區間</h5>
+      <div class="input-group mb-3" style="max-width:360px">
+        <span class="input-group-text">開放未來</span>
+        <input id="set-window" type="number" class="form-control" />
+        <span class="input-group-text">天內</span>
+        <button class="btn btn-primary" onclick="saveSetting('venue_open_window_days', document.getElementById('set-window').value)">儲存</button>
+      </div>
+
+      <h5>不開放借用時段（封鎖）</h5>
+      <div class="row g-2 align-items-end mb-2">
+        <div class="col-auto"><label class="form-label mb-0 small">場地</label>
+          <select id="cl-venue" class="form-select"><option value="3F">3F 學開</option><option value="207">207 微學開</option></select></div>
+        <div class="col-auto"><label class="form-label mb-0 small">開始</label><input id="cl-start" type="datetime-local" class="form-control" /></div>
+        <div class="col-auto"><label class="form-label mb-0 small">結束</label><input id="cl-end" type="datetime-local" class="form-control" /></div>
+        <div class="col-auto"><input id="cl-reason" class="form-control" placeholder="原因（選填）" /></div>
+        <div class="col-auto"><button class="btn btn-danger" onclick="addClosed()">新增封鎖</button></div>
+      </div>
+      <div id="closed-list"></div>
+
+      <hr />
+      <h5>207 微學開 借用白名單</h5>
+      <div class="form-check form-switch mb-2">
+        <input id="wl-toggle" class="form-check-input" type="checkbox" onchange="saveSetting('v207_use_whitelist', this.checked ? 'true':'false')" />
+        <label class="form-check-label">啟用白名單（僅名單內學號可借用 207）</label>
+      </div>
+      <p class="text-muted small mb-1">白名單放在另一個 Google Sheet（第一個工作表 A 欄為學號，不分大小寫）。此處貼上該試算表連結即可，系統借用時即時讀取，無需手動加入。請將該試算表共用給 ntusssa2 帳號（或設為「知道連結的任何人可檢視」）。</p>
+      <div class="input-group mb-2" style="max-width:680px">
+        <span class="input-group-text">白名單 Sheet 連結</span>
+        <input id="wl-url" class="form-control" placeholder="https://docs.google.com/spreadsheets/d/..." />
+        <button class="btn btn-primary" onclick="saveSetting('v207_whitelist_url', document.getElementById('wl-url').value)">儲存</button>
+      </div>
+    </div>
+
+    <!-- 院櫃 -->
+    <div class="tab-pane fade" id="t-locker">
+      <div class="card mb-3"><div class="card-body">
+        <h6 class="mb-2">區域設定</h6>
+        <div id="zone-editor"></div>
+        <button class="btn btn-sm btn-outline-secondary mt-1" onclick="addZone()">＋ 新增區域</button>
+        <button class="btn btn-sm btn-primary mt-1" onclick="saveZones()">儲存區域設定</button>
+        <div class="form-text">每區設定編號範圍與是否開放借用（關閉＝前台隱藏該區）。建議以 5 的倍數為界（每欄 5 格）較整齊；最大編號會自動建立對應櫃位。</div>
+      </div></div>
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+        <button class="btn btn-outline-success btn-sm" onclick="allOpen(true)">全部開放借用</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="allOpen(false)">全部關閉</button>
+      </div>
+      <div class="input-group mb-3" style="max-width:440px">
+        <span class="input-group-text">查學號</span>
+        <input id="lk-search" class="form-control" placeholder="輸入學號搜尋借用中的櫃位" />
+        <button class="btn btn-primary" onclick="searchLocker()">搜尋</button>
+      </div>
+      <div id="lk-search-result" class="mb-2"></div>
+      <p class="text-muted small mb-1">編號由上往下 1~5，依區域分組顯示（可左右滑動）。點櫃位可開放／關閉借用；已借出者可「完成借用」（領鑰匙+押金）或「歸還」。</p>
+      <div class="mb-2 small">
+        <span class="badge" style="background:#e9f7f5;color:#1d3557;border:1px solid #2a9d8f">無人借用</span>
+        <span class="badge" style="background:#fff3cd;color:#664d03;border:1px solid #ffca2c">待繳費</span>
+        <span class="badge" style="background:#ffe1e1;color:#842029;border:1px solid #e76f51">借用中</span>
+        <span class="badge" style="background:#eee;color:#777;border:1px dashed #aaa">未開放</span>
+      </div>
+      <div id="locker-grid"></div>
+      <div id="locker-detail" class="mt-3"></div>
+    </div>
+
+    <!-- 投影機 -->
+    <div class="tab-pane fade" id="t-projector">
+      <h5>待審核申請</h5>
+      <div id="proj-pending"></div>
+      <hr />
+      <h5>借用紀錄</h5>
+      <div id="proj-list"></div>
+    </div>
+
+    <!-- 陳情 -->
+    <div class="tab-pane fade" id="t-petition">
+      <h5>學生陳情 / 意見</h5>
+      <div class="mb-2">
+        <select id="pet-filter" class="form-select form-select-sm d-inline-block w-auto" onchange="loadPetitions()">
+          <option value="">全部</option><option value="new">未處理</option><option value="handled">已處理</option>
+        </select>
+      </div>
+      <div id="pet-list"></div>
+    </div>
+
+    <!-- 信件範本 -->
+    <div class="tab-pane fade" id="t-email">
+      <h5>寄信範本</h5>
+      <p class="text-muted small">可用變數：<code>{name}</code> 借用人、<code>{venue}</code> 場地、<code>{time}</code> 時間、<code>{reason}</code> 原因（依信件類型而定）。</p>
+      <div id="email-list"></div>
+    </div>
+
+    <!-- 頁面說明 -->
+    <div class="tab-pane fade" id="t-pagetext">
+      <h5>各頁面說明文字</h5>
+      <p class="text-muted small">這些文字會顯示在對應的借用／申請頁面上方，可隨時調整。</p>
+      <div id="pagetext-list"></div>
+    </div>
+
+    <!-- 系統設定 -->
+    <div class="tab-pane fade" id="t-system">
+      <h5>法規資料夾</h5>
+      <div class="input-group mb-3" style="max-width:560px">
+        <span class="input-group-text">Drive 資料夾 ID</span>
+        <input id="set-regfolder" class="form-control" />
+        <button class="btn btn-primary" onclick="saveSetting('regulations_folder_id', document.getElementById('set-regfolder').value)">儲存</button>
+      </div>
+      <p class="text-muted small">請將該資料夾共用設為「知道連結的任何人皆可檢視」，學生才能開啟檔案。</p>
+
+      <h5>院櫃押金金額</h5>
+      <div class="input-group mb-3" style="max-width:320px">
+        <span class="input-group-text">NT$</span>
+        <input id="set-deposit" class="form-control" />
+        <button class="btn btn-primary" onclick="saveSetting('locker_deposit', document.getElementById('set-deposit').value)">儲存</button>
+      </div>
+
+      <hr />
+      <h5>管理員名單</h5>
+      <p class="text-muted small">新增管理員後，請另將「試算表」與「兩個行事曆」共用（編輯權限）給對方。</p>
+      <div class="input-group mb-2" style="max-width:420px">
+        <input id="adm-input" class="form-control" placeholder="管理員 Google Email" />
+        <button class="btn btn-primary" onclick="addAdm()">新增</button>
+      </div>
+      <div id="adm-list"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:1100;min-width:360px;max-width:92vw"></div>
+  </div><!-- /#app -->
+
+  <script>
+    // ---------- 設定 + 登入 ----------
+    var WORKER_URL = 'https://ntu-coss-api.ntusssa2.workers.dev';
+    var CLIENT_ID = '980997931795-8aq3kc0ca3eqovdocb01o646f4effrgi.apps.googleusercontent.com';
+    var TOKEN = null;
+
+    function showGate(msg) {
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('signin-gate').style.display = 'flex';
+      document.getElementById('gate-msg').textContent = msg || '';
+    }
+    function onSignIn(resp) {
+      TOKEN = resp.credential;
+      document.getElementById('gate-msg').textContent = '驗證中…';
+      call('whoami').then(function (email) {
+        document.getElementById('admin-email').textContent = email;
+        document.getElementById('signin-gate').style.display = 'none';
+        document.getElementById('app').style.display = '';
+        loadAnnounce();
+      }).catch(function (e) {
+        TOKEN = null;
+        showGate(e && e.message ? e.message : '登入失敗。');
+      });
+    }
+    function signOut() {
+      TOKEN = null;
+      try { google.accounts.id.disableAutoSelect(); } catch (e) {}
+      showGate('已登出。');
+    }
+    window.addEventListener('load', function () {
+      function tryInit() {
+        if (!(window.google && google.accounts && google.accounts.id)) { setTimeout(tryInit, 200); return; }
+        google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onSignIn });
+        google.accounts.id.renderButton(document.getElementById('gbtn'), { theme: 'outline', size: 'large', text: 'signin_with', shape: 'pill' });
+      }
+      tryInit();
+    });
+
+    // ---------- 共用 ----------
+    function notify(msg, ok) {
+      var c = document.getElementById('toast');
+      var fail = ok === false;
+      var el = document.createElement('div');
+      el.className = 'alert alert-' + (fail ? 'danger' : 'success') +
+        ' shadow-lg border-0 fs-5 fw-semibold text-center py-3 d-flex align-items-center justify-content-center gap-2';
+      el.style.transition = 'opacity .4s';
+      el.innerHTML = '<span style="font-size:1.4rem">' + (fail ? '⚠️' : '✅') + '</span><span>' + msg + '</span>';
+      c.appendChild(el);
+      setTimeout(function () { el.style.opacity = '0'; }, fail ? 4600 : 2600);
+      setTimeout(function () { el.remove(); }, fail ? 5000 : 3000);
+    }
+    function call(name) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      return fetch(WORKER_URL + '/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN },
+        body: JSON.stringify({ action: name, args: args }),
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (data) {
+          if (r.status === 401) { showGate(data.error || '登入已過期，請重新登入。'); throw new Error(data.error || '未登入'); }
+          if (!r.ok) { notify(data.error || ('HTTP ' + r.status), false); throw new Error(data.error || ('HTTP ' + r.status)); }
+          return data.result;
+        });
+      });
+    }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+    function fmt(iso) { var d = new Date(iso); return isNaN(d) ? esc(iso) : d.toLocaleString('zh-TW', { hour12: false }); }
+
+    // ---------- 公告 ----------
+    function loadAnnounce() {
+      call('listAnnouncements').then(function (rows) {
+        document.getElementById('an-list').innerHTML = rows.map(function (r) {
+          return '<div class="card mb-2"><div class="card-body py-2">' +
+            '<div class="d-flex justify-content-between"><b>' + (r.pinned === 'true' ? '📌 ' : '') + esc(r.title) + '</b><small>' + esc(r.date) + '</small></div>' +
+            '<div class="small text-muted" style="white-space:pre-wrap">' + esc(r.body) + '</div>' +
+            '<button class="btn btn-sm btn-outline-primary mt-1" onclick=\'editAnnounce(' + JSON.stringify(r).replace(/'/g, "&#39;") + ')\'>編輯</button> ' +
+            '<button class="btn btn-sm btn-outline-danger mt-1" onclick="delAnnounce(\'' + r.id + '\')">刪除</button>' +
+            '</div></div>';
+        }).join('') || '<p class="text-muted">尚無公告。</p>';
+      });
+    }
+    function editAnnounce(r) {
+      document.getElementById('an-id').value = r.id;
+      document.getElementById('an-title').value = r.title;
+      document.getElementById('an-date').value = r.date;
+      document.getElementById('an-body').value = r.body;
+      document.getElementById('an-pinned').checked = r.pinned === 'true';
+    }
+    function resetAnnounce() { ['an-id', 'an-title', 'an-date', 'an-body'].forEach(function (i) { document.getElementById(i).value = ''; }); document.getElementById('an-pinned').checked = false; }
+    function saveAnnounce() {
+      call('saveAnnouncement', {
+        id: document.getElementById('an-id').value, title: document.getElementById('an-title').value,
+        date: document.getElementById('an-date').value, body: document.getElementById('an-body').value,
+        pinned: document.getElementById('an-pinned').checked
+      }).then(function () { notify('已儲存'); resetAnnounce(); loadAnnounce(); });
+    }
+    function delAnnounce(id) { if (confirm('確定刪除？')) call('deleteAnnouncement', id).then(function () { loadAnnounce(); }); }
+
+    // ---------- 行事曆 ----------
+    function loadCal() {
+      call('listCalendars').then(function (rows) {
+        document.getElementById('cal-list').innerHTML = rows.map(function (r) {
+          return '<div class="card mb-2"><div class="card-body py-2"><b>' + esc(r.title) + '</b>' +
+            '<div class="small text-muted text-truncate">' + esc(r.embedUrl) + '</div>' +
+            '<button class="btn btn-sm btn-outline-primary mt-1" onclick=\'editCal(' + JSON.stringify(r).replace(/'/g, "&#39;") + ')\'>編輯</button> ' +
+            '<button class="btn btn-sm btn-outline-danger mt-1" onclick="delCal(\'' + r.id + '\')">刪除</button></div></div>';
+        }).join('') || '<p class="text-muted">尚未設定。</p>';
+      });
+    }
+    function editCal(r) { document.getElementById('cal-id').value = r.id; document.getElementById('cal-title').value = r.title; document.getElementById('cal-url').value = r.embedUrl; }
+    function resetCal() { ['cal-id', 'cal-title', 'cal-url'].forEach(function (i) { document.getElementById(i).value = ''; }); }
+    function saveCal() {
+      call('saveCalendar', { id: document.getElementById('cal-id').value, title: document.getElementById('cal-title').value, embedUrl: document.getElementById('cal-url').value })
+        .then(function () { notify('已儲存'); resetCal(); loadCal(); });
+    }
+    function delCal(id) { if (confirm('確定刪除？')) call('deleteCalendar', id).then(function () { loadCal(); }); }
+
+    // ---------- 場地 ----------
+    function vname(v) { return v === '3F' ? '3F 學開' : '207 微學開'; }
+    function loadVenuePending() {
+      call('listVenueBookings', { status: 'pending' }).then(function (rows) {
+        document.getElementById('venue-pending').innerHTML = rows.length ? '<table class="table table-sm table-bordered align-middle"><thead><tr><th>場地</th><th>單位/聯絡人</th><th>事由</th><th>系級/學號</th><th>時間</th><th>操作</th></tr></thead><tbody>' +
+          rows.map(function (r) {
+            return '<tr><td>' + vname(r.venue) + '</td><td>' + esc(r.org) + '<br>' + esc(r.contactName) + '</td><td>' + esc(r.purpose) + '</td><td>' + esc(r.dept) + '<br>' + esc(r.studentId) + '</td><td>' + fmt(r.startISO) + '<br>~ ' + fmt(r.endISO) + '</td>' +
+              '<td><button class="btn btn-sm btn-success" onclick="approveB(\'' + r.id + '\')">核准</button> ' +
+              '<button class="btn btn-sm btn-danger" onclick="rejectB(\'' + r.id + '\')">拒絕</button></td></tr>';
+          }).join('') + '</tbody></table>' : '<p class="text-muted">沒有待審核申請。</p>';
+      });
+    }
+    function approveB(id) { call('approveBooking', id).then(function () { notify('已核准並寄信'); loadVenuePending(); loadVenueAll(); }); }
+    function rejectB(id) { var reason = prompt('拒絕原因（選填）：') || ''; call('rejectBooking', id, reason).then(function () { notify('已拒絕'); loadVenuePending(); loadVenueAll(); }); }
+    function loadVenueAll() {
+      var f = document.getElementById('venue-filter').value;
+      call('listVenueBookings', f ? { status: f } : {}).then(function (rows) {
+        document.getElementById('venue-all').innerHTML = rows.length ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>場地</th><th>聯絡人</th><th>學號</th><th>時間</th><th>狀態</th><th></th></tr></thead><tbody>' +
+          rows.map(function (r) {
+            return '<tr><td>' + vname(r.venue) + '</td><td>' + esc(r.contactName) + '</td><td>' + esc(r.studentId) + '</td><td>' + fmt(r.startISO) + ' ~ ' + fmt(r.endISO) + '</td>' +
+              '<td><span class="badge bg-' + (r.status === 'approved' ? 'success' : r.status === 'pending' ? 'warning text-dark' : 'secondary') + '">' + r.status + '</span></td>' +
+              '<td><button class="btn btn-sm btn-outline-danger" onclick="delB(\'' + r.id + '\')">刪除</button></td></tr>';
+          }).join('') + '</tbody></table>' : '<p class="text-muted">無紀錄。</p>';
+      });
+    }
+    function delB(id) { if (confirm('刪除此預約？（不會刪除行事曆事件）')) call('deleteVenueBooking', id).then(function () { loadVenueAll(); }); }
+
+    function loadClosed() {
+      call('listClosed').then(function (rows) {
+        document.getElementById('closed-list').innerHTML = rows.length ? '<table class="table table-sm"><tbody>' + rows.map(function (r) {
+          return '<tr><td>' + vname(r.venue) + '</td><td>' + fmt(r.startISO) + ' ~ ' + fmt(r.endISO) + '</td><td>' + esc(r.reason) + '</td>' +
+            '<td><button class="btn btn-sm btn-outline-danger" onclick="delClosed(\'' + r.id + '\')">刪除</button></td></tr>';
+        }).join('') + '</tbody></table>' : '<p class="text-muted">無封鎖時段。</p>';
+      });
+    }
+    function addClosed() {
+      var s = document.getElementById('cl-start').value, e = document.getElementById('cl-end').value;
+      if (!s || !e) { notify('請填寫起訖時間', false); return; }
+      call('addClosed', { venue: document.getElementById('cl-venue').value, startISO: new Date(s).toISOString(), endISO: new Date(e).toISOString(), reason: document.getElementById('cl-reason').value })
+        .then(function () { notify('已新增'); loadClosed(); });
+    }
+    function delClosed(id) { call('deleteClosed', id).then(function () { loadClosed(); }); }
+
+    function allOpen(open) { call('setAllLockersOpen', open).then(function () { notify(open ? '已全部開放借用' : '已全部關閉'); loadLocker(); }); }
+    function searchLocker() {
+      var sid = document.getElementById('lk-search').value;
+      if (!sid) return;
+      call('findLockerByStudent', sid).then(function (rows) {
+        document.getElementById('lk-search-result').innerHTML = rows.length
+          ? '<div class="alert alert-info py-2 mb-0">' + rows.map(function (r) {
+              return '櫃位 <b>' + r.number + '</b>：' + esc(r.borrowerName) + '（' + esc(r.dept) + '）' +
+                (r.completed === 'true' ? ' ✅已完成借用' : ' ⏳未完成');
+            }).join('<br>') + '</div>'
+          : '<div class="alert alert-warning py-2 mb-0">查無此學號借用中的櫃位。</div>';
+      });
+    }
+
+    // ---------- 院櫃 ----------
+    function lockerCellHtml(num, map) {
+      var l = map[num] || {};
+      var cls = 'closed', label = '未開放';
+      if (l.open === 'true') {
+        if (l.status === 'borrowed') {
+          if (l.completed === 'true') { cls = 'inuse'; label = '借用中'; }
+          else { cls = 'pending'; label = '待繳費'; }
+        } else { cls = 'avail'; label = '無人借用'; }
+      }
+      var sid = l.status === 'borrowed' ? esc(l.studentId) : '';
+      return '<span class="grid-cell ' + cls + '" title="櫃位 ' + num + (sid ? ' / ' + sid : '') + '" onclick="lockerDetail(' + num + ')">' +
+        '<b>' + num + '</b><small>' + label + '</small>' +
+        (sid ? '<small class="sid">' + sid + '</small>' : '') + '</span>';
+    }
+    function loadLocker() {
+      call('getLockerAdmin').then(function (d) {
+        var map = {}; d.lockers.forEach(function (l) { map[Number(l.number)] = l; });
+        window.__lockers = map;
+        window.__zones = d.zones || [];
+        renderZoneEditor();
+        var html = '';
+        (d.zones || []).forEach(function (z) {
+          var fromCol = Math.ceil(z.from / d.rows), toCol = Math.ceil(z.to / d.rows);
+          html += '<div class="mb-3"><div class="fw-bold mb-1">' + esc(z.name) +
+            ' <span class="badge bg-' + (z.open === false ? 'secondary' : 'success') + '">' +
+            (z.open === false ? '未開放（前台隱藏）' : '開放中') + '</span>' +
+            ' <small class="text-muted">#' + z.from + '~' + z.to + '</small></div>' +
+            '<div class="grid-scroll"><div class="grid-inner">';
+          for (var r = 1; r <= d.rows; r++) {            // 5 列，由上往下
+            html += '<div class="grid-line">';
+            for (var c = toCol; c >= fromCol; c--) {     // 由右往左
+              var num = (c - 1) * d.rows + r;
+              if (num < z.from || num > z.to) { html += '<span class="grid-cell empty"></span>'; continue; }
+              html += lockerCellHtml(num, map);
+            }
+            html += '</div>';
+          }
+          html += '</div></div></div>';
+        });
+        document.getElementById('locker-grid').innerHTML = html || '<div class="text-muted">尚未設定任何區域。</div>';
+      });
+    }
+    function renderZoneEditor() {
+      var zs = window.__zones || [];
+      document.getElementById('zone-editor').innerHTML = zs.map(function (z, i) {
+        return '<div class="row g-2 align-items-center mb-2 zone-row">' +
+          '<div class="col-12 col-md-4"><input class="form-control form-control-sm z-name" placeholder="區域名稱" value="' + esc(z.name || '') + '"></div>' +
+          '<div class="col-4 col-md-2"><div class="input-group input-group-sm"><span class="input-group-text">起</span><input type="number" class="form-control z-from" value="' + z.from + '"></div></div>' +
+          '<div class="col-4 col-md-2"><div class="input-group input-group-sm"><span class="input-group-text">迄</span><input type="number" class="form-control z-to" value="' + z.to + '"></div></div>' +
+          '<div class="col-3 col-md-2"><div class="form-check"><input class="form-check-input z-open" type="checkbox" ' + (z.open === false ? '' : 'checked') + ' id="zopen' + i + '"><label class="form-check-label small" for="zopen' + i + '">開放借用</label></div></div>' +
+          '<div class="col-auto"><button class="btn btn-sm btn-outline-danger" onclick="removeZone(' + i + ')">刪除</button></div>' +
+          '</div>';
+      }).join('') || '<div class="text-muted small mb-2">尚無區域，請新增。</div>';
+    }
+    function addZone() { (window.__zones = window.__zones || []).push({ name: '', from: 1, to: 5, open: true }); renderZoneEditor(); }
+    function removeZone(i) { window.__zones.splice(i, 1); renderZoneEditor(); }
+    function saveZones() {
+      var zones = [];
+      document.querySelectorAll('#zone-editor .zone-row').forEach(function (row) {
+        zones.push({
+          name: row.querySelector('.z-name').value,
+          from: Number(row.querySelector('.z-from').value),
+          to: Number(row.querySelector('.z-to').value),
+          open: row.querySelector('.z-open').checked,
+        });
+      });
+      call('saveLockerZones', zones).then(function () { notify('已儲存區域設定'); loadLocker(); });
+    }
+    function lockerDetail(num) {
+      var l = window.__lockers[num] || { number: num };
+      var borrowed = l.status === 'borrowed';
+      var h = '<div class="card"><div class="card-body"><h6>櫃位 ' + num + '</h6>' +
+        '<p class="small mb-1">開放借用：<b>' + (l.open === 'true' ? '是' : '否') + '</b>　狀態：<b>' + (l.status || 'available') + '</b>' +
+        (borrowed ? '<br>借用人：' + esc(l.borrowerName) + '（' + esc(l.dept) + ' / ' + esc(l.studentId) + '）' +
+          '<br>完成借用(鑰匙+押金)：' + (l.completed === 'true' ? '是 ' + fmt(l.completedAt) : '否') : '') + '</p>' +
+        '<button class="btn btn-sm btn-outline-secondary" onclick="toggleOpen(' + num + ',' + (l.open === 'true' ? 'false' : 'true') + ')">' + (l.open === 'true' ? '關閉借用' : '開放借用') + '</button> ' +
+        (borrowed && l.completed !== 'true' ? '<button class="btn btn-sm btn-warning" onclick="completeLk(' + num + ')">完成借用（領鑰匙+押金）</button> ' : '') +
+        (borrowed ? '<button class="btn btn-sm btn-success" onclick="returnLk(' + num + ')">歸還（退押金+收鑰匙）</button> ' : '') +
+        (borrowed ? '<button class="btn btn-sm btn-outline-danger" onclick="clearLk(' + num + ')">清除借用</button> ' : '') +
+        '<hr><div class="row g-2"><div class="col"><input id="ed-name" class="form-control form-control-sm" placeholder="借用人" value="' + esc(l.borrowerName) + '"></div>' +
+        '<div class="col"><input id="ed-dept" class="form-control form-control-sm" placeholder="系級" value="' + esc(l.dept) + '"></div>' +
+        '<div class="col"><input id="ed-sid" class="form-control form-control-sm" placeholder="學號" value="' + esc(l.studentId) + '"></div>' +
+        '<div class="col-auto"><button class="btn btn-sm btn-primary" onclick="manualBorrow(' + num + ')">手動設定為借出</button></div></div>' +
+        '<small class="text-muted">手動設定可不受「一人一櫃」限制。</small></div></div>';
+      document.getElementById('locker-detail').innerHTML = h;
+    }
+    function toggleOpen(num, open) { call('toggleLockerOpen', num, open).then(function () { loadLocker(); document.getElementById('locker-detail').innerHTML = ''; }); }
+    function completeLk(num) { call('completeLocker', num).then(function () { notify('已完成借用'); loadLocker(); lockerDetail(num); }); }
+    function returnLk(num) { if (confirm('確認歸還並退押金？')) call('returnLocker', num).then(function () { notify('已歸還'); loadLocker(); document.getElementById('locker-detail').innerHTML = ''; }); }
+    function clearLk(num) { if (confirm('清除此櫃位借用資料？')) call('clearLocker', num).then(function () { loadLocker(); document.getElementById('locker-detail').innerHTML = ''; }); }
+    function manualBorrow(num) {
+      call('editLocker', num, { status: 'borrowed', borrowerName: document.getElementById('ed-name').value, dept: document.getElementById('ed-dept').value, studentId: document.getElementById('ed-sid').value, open: 'true' })
+        .then(function () { notify('已更新'); loadLocker(); lockerDetail(num); });
+    }
+
+    // ---------- 投影機 ----------
+    function projStatusBadge(s) {
+      var m = { pending: ['warning text-dark', '待審核'], approved: ['info text-dark', '已核准待領用'],
+        borrowed: ['primary', '借用中'], returned: ['success', '已歸還'], rejected: ['secondary', '已拒絕'] };
+      var x = m[s] || ['secondary', s];
+      return '<span class="badge bg-' + x[0] + '">' + x[1] + '</span>';
+    }
+    function loadProjPending() {
+      call('listProjector').then(function (rows) {
+        var pend = rows.filter(function (r) { return r.status === 'pending'; });
+        document.getElementById('proj-pending').innerHTML = pend.length ? '<table class="table table-sm table-bordered align-middle"><thead><tr><th>姓名</th><th>系級/學號</th><th>事由</th><th>期間</th><th>操作</th></tr></thead><tbody>' +
+          pend.map(function (r) {
+            return '<tr><td>' + esc(r.borrowerName) + '</td><td>' + esc(r.dept) + '<br>' + esc(r.studentId) + '</td><td>' + esc(r.purpose) + '</td><td>' + esc(r.fromDate) + ' ~ ' + esc(r.toDate) + '</td>' +
+              '<td><button class="btn btn-sm btn-success" onclick="approveProj(\'' + r.id + '\')">核准</button> ' +
+              '<button class="btn btn-sm btn-danger" onclick="rejectProj(\'' + r.id + '\')">拒絕</button></td></tr>';
+          }).join('') + '</tbody></table>' : '<p class="text-muted">沒有待審核申請。</p>';
+        renderProjList(rows);
+      });
+    }
+    function renderProjList(rows) {
+      document.getElementById('proj-list').innerHTML = rows.length ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>姓名</th><th>學號</th><th>狀態</th><th>操作</th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          var actions = '';
+          if (r.status === 'approved') actions += '<button class="btn btn-sm btn-warning" onclick="pickupProj(\'' + r.id + '\')">領用</button> ';
+          if (r.status === 'borrowed') actions += '<button class="btn btn-sm btn-success" onclick="returnProj(\'' + r.id + '\')">歸還</button> ';
+          actions += '<button class="btn btn-sm btn-outline-danger" onclick="delProj(\'' + r.id + '\')">刪除</button>';
+          return '<tr><td>' + esc(r.borrowerName) + '</td><td>' + esc(r.studentId) + '</td><td>' + projStatusBadge(r.status) + '</td><td>' + actions + '</td></tr>';
+        }).join('') + '</tbody></table>' : '<p class="text-muted">無紀錄。</p>';
+    }
+    function approveProj(id) { call('approveProjector', id).then(function () { notify('已核准並寄信'); loadProjPending(); }); }
+    function rejectProj(id) { var reason = prompt('拒絕原因（選填）：') || ''; call('rejectProjector', id, reason).then(function () { notify('已拒絕'); loadProjPending(); }); }
+    function pickupProj(id) { call('pickupProjector', id).then(function () { notify('已標記領用'); loadProjPending(); }); }
+    function returnProj(id) { if (confirm('確認歸還？')) call('returnProjector', id).then(function () { notify('已歸還'); loadProjPending(); }); }
+    function delProj(id) { if (confirm('刪除此紀錄？')) call('deleteProjector', id).then(function () { loadProjPending(); }); }
+
+    // ---------- 系統設定 ----------
+    function loadSettings() {
+      call('getSettingsAll').then(function (rows) {
+        var m = {}; rows.forEach(function (r) { m[r.key] = r.value; });
+        document.getElementById('set-window').value = m.venue_open_window_days || '30';
+        document.getElementById('set-regfolder').value = m.regulations_folder_id || '';
+        document.getElementById('set-deposit').value = m.locker_deposit || '100';
+        document.getElementById('wl-toggle').checked = String(m.v207_use_whitelist) === 'true';
+        document.getElementById('wl-url').value = m.v207_whitelist_url || '';
+      });
+    }
+    function saveSetting(key, val) { call('saveSetting', key, val).then(function () { notify('已儲存'); }); }
+    function loadAdmins() {
+      call('listAdmins').then(function (list) {
+        document.getElementById('adm-list').innerHTML = list.map(function (e) {
+          return '<span class="badge bg-light text-dark border me-1 mb-1">' + esc(e) + ' <a href="#" onclick="rmAdm(\'' + esc(e) + '\');return false;">✕</a></span>';
+        }).join('');
+      });
+    }
+    function addAdm() { var v = document.getElementById('adm-input').value; if (!v) return; call('addAdmin', v).then(function () { document.getElementById('adm-input').value = ''; loadAdmins(); notify('已新增，請記得共用試算表與行事曆'); }); }
+    function rmAdm(e) { if (confirm('移除管理員 ' + e + '？')) call('removeAdmin', e).then(loadAdmins); }
+
+    // ---------- 陳情 ----------
+    function petStatusBadge(s) { return s === 'handled' ? '<span class="badge bg-success">已處理</span>' : '<span class="badge bg-warning text-dark">未處理</span>'; }
+    function loadPetitions() {
+      var f = document.getElementById('pet-filter').value;
+      call('listPetitions').then(function (rows) {
+        if (f) rows = rows.filter(function (r) { return r.status === f; });
+        document.getElementById('pet-list').innerHTML = rows.length ? rows.map(function (r) {
+          return '<div class="card mb-2"><div class="card-body py-2">' +
+            '<div class="d-flex justify-content-between"><b>' + esc(r.subject) + '</b><small>' + fmt(r.createdAt) + '</small></div>' +
+            '<div class="small text-muted mb-1">' + petStatusBadge(r.status) + ' 類別：' + esc(r.category || '-') + '　姓名：' + esc(r.name || '（匿名）') + '　聯絡：' + esc(r.contact || '-') + '</div>' +
+            '<div style="white-space:pre-wrap">' + esc(r.content) + '</div>' +
+            '<div class="mt-2">' +
+              (r.status === 'handled'
+                ? '<button class="btn btn-sm btn-outline-secondary" onclick="petStatus(\'' + r.id + '\',\'new\')">標記未處理</button> '
+                : '<button class="btn btn-sm btn-success" onclick="petStatus(\'' + r.id + '\',\'handled\')">標記已處理</button> ') +
+              '<button class="btn btn-sm btn-outline-danger" onclick="petDel(\'' + r.id + '\')">刪除</button>' +
+            '</div></div></div>';
+        }).join('') : '<p class="text-muted">目前沒有陳情。</p>';
+      });
+    }
+    function petStatus(id, s) { call('setPetitionStatus', id, s, '').then(function () { notify('已更新'); loadPetitions(); }); }
+    function petDel(id) { if (confirm('刪除此陳情？')) call('deletePetition', id).then(function () { loadPetitions(); }); }
+
+    // ---------- 信件範本 ----------
+    function loadEmail() {
+      call('listEmailTemplates').then(function (rows) {
+        document.getElementById('email-list').innerHTML = rows.map(function (r) {
+          return '<div class="card mb-3"><div class="card-body">' +
+            '<h6>' + esc(r.label) + ' <small class="text-muted">(' + r.key + ')</small></h6>' +
+            '<input class="form-control mb-2" id="em-sub-' + r.key + '" value="' + esc(r.subject) + '" placeholder="主旨">' +
+            '<textarea class="form-control mb-2" id="em-body-' + r.key + '" rows="5">' + esc(r.body) + '</textarea>' +
+            '<button class="btn btn-sm btn-primary" onclick="saveEmail(\'' + r.key + '\')">儲存</button>' +
+          '</div></div>';
+        }).join('');
+      });
+    }
+    function saveEmail(key) {
+      call('saveEmailTemplate', key, document.getElementById('em-sub-' + key).value, document.getElementById('em-body-' + key).value)
+        .then(function () { notify('範本已儲存'); });
+    }
+
+    // ---------- 頁面說明 ----------
+    function loadPageTexts() {
+      call('listPageTexts').then(function (rows) {
+        document.getElementById('pagetext-list').innerHTML = rows.map(function (r) {
+          return '<div class="card mb-3"><div class="card-body">' +
+            '<h6>' + esc(r.label) + '</h6>' +
+            '<textarea class="form-control mb-2" id="pt-' + r.key + '" rows="3">' + esc(r.value) + '</textarea>' +
+            '<button class="btn btn-sm btn-primary" onclick="savePageText(\'' + r.key + '\')">儲存</button>' +
+          '</div></div>';
+        }).join('');
+      });
+    }
+    function savePageText(key) {
+      call('saveSetting', key, document.getElementById('pt-' + key).value).then(function () { notify('已儲存'); });
+    }
+
+    // ---------- 分頁載入 ----------
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (btn) {
+      btn.addEventListener('shown.bs.tab', function (e) {
+        var t = e.target.getAttribute('data-bs-target');
+        if (t === '#t-calendar') loadCal();
+        if (t === '#t-venue') { loadVenuePending(); loadVenueAll(); }
+        if (t === '#t-vset') { loadClosed(); loadSettings(); }
+        if (t === '#t-locker') loadLocker();
+        if (t === '#t-projector') loadProjPending();
+        if (t === '#t-petition') loadPetitions();
+        if (t === '#t-email') loadEmail();
+        if (t === '#t-pagetext') loadPageTexts();
+        if (t === '#t-system') { loadSettings(); loadAdmins(); }
+      });
+    });
+
+    // 初始載入由登入成功後的 onSignIn() 觸發
+  </script>
+</body>
+</html>
