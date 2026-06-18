@@ -290,8 +290,11 @@
         <div class="col-12 col-md-6"><label class="form-label mb-0 small">正本</label><input id="gw-orig" class="form-control form-control-sm" /></div>
         <div class="col-12 col-md-6"><label class="form-label mb-0 small">副本</label><input id="gw-copy" class="form-control form-control-sm" /></div>
         <div class="col-12 col-md-6"><label class="form-label mb-0 small">署名（職稱 姓名）</label><input id="gw-signer" class="form-control form-control-sm" placeholder="會長　＿＿＿" /></div>
+        <div class="col-12 col-md-6"><label class="form-label mb-0 small">印章文字</label><input id="gw-sealtext" class="form-control form-control-sm" value="國立臺灣大學社會科學院學生會印" /></div>
+        <div class="col-12 form-check ms-2"><input id="gw-seal" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">加蓋藍色印章</label></div>
       </div>
-      <button class="btn btn-primary mt-3" onclick="genGongwen()">產生 PDF（列印）</button>
+      <p class="text-muted small mt-2 mb-0">公文以標楷體呈現（系統需安裝標楷體；macOS 為「標楷體 BiauKai」、Windows 為「DFKai-SB」）。</p>
+      <button class="btn btn-primary mt-2" onclick="genGongwen()">產生 PDF（列印）</button>
     </div>
 
     <!-- 頁面說明 -->
@@ -1003,9 +1006,18 @@
         (v('gw-subject') ? '<div style="margin:14px 0;font-size:16px"><b>主旨：</b>' + esc(v('gw-subject')).replace(/\n/g, '<br>') + '</div>' : '') +
         (v('gw-body') ? '<div style="margin:14px 0"><b>說明：</b><div style="white-space:pre-wrap;margin-top:4px">' + esc(v('gw-body')) + '</div></div>' : '') +
         (v('gw-orig') ? '<div style="margin-top:20px"><b>正本：</b>' + esc(v('gw-orig')) + '</div>' : '') +
-        (v('gw-copy') ? '<div><b>副本：</b>' + esc(v('gw-copy')) + '</div>' : '') +
-        (v('gw-signer') ? '<div style="text-align:center;margin-top:48px;font-size:18px;letter-spacing:4px">' + esc(v('gw-signer')) + '</div>' : '');
-      printDoc('公文', html, 'body{font-size:15px;}');
+        (v('gw-copy') ? '<div><b>副本：</b>' + esc(v('gw-copy')) + '</div>' : '');
+      var seal = document.getElementById('gw-seal').checked && v('gw-sealtext');
+      if (v('gw-signer') || seal) {
+        html += '<div style="text-align:center;margin-top:54px;">' +
+          (v('gw-signer') ? '<span style="font-size:19px;letter-spacing:6px;vertical-align:middle">' + esc(v('gw-signer')) + '</span>' : '') +
+          (seal ? '<span class="seal" style="margin-left:30px;vertical-align:middle">' + esc(v('gw-sealtext')) + '</span>' : '') +
+          '</div>';
+      }
+      var css = 'body{font-family:"DFKai-SB","BiauKai","標楷體","KaiTi","TW-Kai",serif;font-size:16px;} b{font-weight:bold;} ' +
+        '.seal{display:inline-block;border:3px solid #12409a;color:#12409a;border-radius:6px;writing-mode:vertical-rl;text-orientation:upright;' +
+        'height:120px;padding:8px 10px;font-weight:bold;font-size:15px;letter-spacing:2px;line-height:1.5;box-shadow:inset 0 0 0 1px #12409a;transform:rotate(-3deg);}';
+      printDoc('公文', html, css);
     }
 
     // ---------- 分頁載入 ----------
