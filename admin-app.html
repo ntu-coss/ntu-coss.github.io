@@ -8,7 +8,8 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async></script>
   <style>
-    body { padding: 1rem 1.25rem; }
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    main.admin-main { flex: 1; padding: 1rem 1.25rem; }
     .tab-pane { padding-top: 1rem; }
     table { font-size: .9rem; }
     .grid-cell { width:76px;height:70px;border:2px solid #ccc;border-radius:6px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;font-size:.78rem;margin:3px;overflow:hidden;cursor:pointer;padding:2px; }
@@ -26,8 +27,26 @@
   </style>
 </head>
 <body>
+  <nav class="navbar navbar-expand-lg" style="background-color:#1d3557" data-bs-theme="dark">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="/">臺大社科院學生會</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+      <div class="collapse navbar-collapse" id="mainNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="/">首頁</a></li>
+          <li class="nav-item"><a class="nav-link" href="/regulations">法規查詢</a></li>
+          <li class="nav-item"><a class="nav-link" href="/venue">場地預約</a></li>
+          <li class="nav-item"><a class="nav-link" href="/locker">院櫃預約</a></li>
+          <li class="nav-item"><a class="nav-link" href="/projector">投影機借用</a></li>
+          <li class="nav-item"><a class="nav-link" href="/petition">陳情</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="admin-main">
   <!-- 登入閘門：未登入前顯示，登入成功後隱藏 -->
-  <div id="signin-gate" class="d-flex align-items-center justify-content-center" style="min-height:80vh">
+  <div id="signin-gate" class="d-flex align-items-center justify-content-center" style="min-height:70vh">
     <div class="card shadow-sm" style="max-width:420px;width:100%">
       <div class="card-body text-center p-4">
         <h4 class="mb-1">社科院學生會 後台</h4>
@@ -235,6 +254,23 @@
 
   <div id="toast" class="position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:1100;min-width:360px;max-width:92vw"></div>
   </div><!-- /#app -->
+  </main>
+
+  <footer class="mt-auto py-4" style="background-color:#f4f5f7">
+    <div class="container" style="font-size:.9rem">
+      <h6 class="mb-1">國立臺灣大學社會科學院學生會</h6>
+      <p class="text-muted mb-2">NTU College of Social Sciences Student Association</p>
+      <div class="d-flex flex-wrap gap-3 mb-2">
+        <a href="mailto:ntusssa2@gmail.com" class="text-decoration-none">✉️ ntusssa2@gmail.com</a>
+        <a href="https://www.facebook.com/NTUSSSA" target="_blank" rel="noreferrer" class="text-decoration-none">Facebook</a>
+        <a href="https://www.instagram.com/ntu.sssa/" target="_blank" rel="noreferrer" class="text-decoration-none">Instagram</a>
+      </div>
+      <div class="d-flex justify-content-between flex-wrap">
+        <span class="text-muted">© 2026 臺大社科院學生會</span>
+        <span class="text-muted">Ver: 1.0</span>
+      </div>
+    </div>
+  </footer>
 
   <script>
     // ---------- 設定 + 登入 ----------
@@ -252,6 +288,7 @@
       document.getElementById('gate-msg').textContent = '驗證中…';
       call('whoami').then(function (email) {
         document.getElementById('admin-email').textContent = email;
+        try { google.accounts.id.cancel(); } catch (e) {}   // 收掉殘留的 Google 提示
         document.getElementById('signin-gate').style.display = 'none';
         document.getElementById('app').style.display = '';
         loadAnnounce();
