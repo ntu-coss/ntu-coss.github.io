@@ -77,6 +77,7 @@
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-email" type="button">信件範本</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-pagetext" type="button">頁面說明</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-system" type="button">系統設定</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#t-audit" type="button">操作紀錄</button></li>
   </ul>
 
   <div class="tab-content">
@@ -243,12 +244,25 @@
 
       <hr />
       <h5>管理員名單</h5>
-      <p class="text-muted small">新增管理員後，請另將「試算表」與「兩個行事曆」共用（編輯權限）給對方。</p>
-      <div class="input-group mb-2" style="max-width:420px">
-        <input id="adm-input" class="form-control" placeholder="管理員 Google Email" />
-        <button class="btn btn-primary" onclick="addAdm()">新增</button>
+      <div id="adm-owner-only">
+        <p class="text-muted small mb-2">新增 / 編輯管理員（僅擁有者可調整）。Email 為識別鍵；同 Email 再送出即為編輯。</p>
+        <div class="row g-2 mb-2" style="max-width:760px">
+          <div class="col-12 col-md-4"><input id="adm-email" class="form-control form-control-sm" placeholder="Google Email" /></div>
+          <div class="col-6 col-md-3"><input id="adm-name" class="form-control form-control-sm" placeholder="姓名" /></div>
+          <div class="col-6 col-md-3"><input id="adm-title" class="form-control form-control-sm" placeholder="職稱" /></div>
+          <div class="col-12 col-md-2 d-grid"><button class="btn btn-primary btn-sm" onclick="addAdm()">新增/更新</button></div>
+        </div>
       </div>
+      <div id="adm-readonly-note" class="text-muted small mb-2 d-none">您可檢視名單，但僅擁有者帳號可新增或移除管理員。</div>
       <div id="adm-list"></div>
+    </div>
+
+    <!-- 操作紀錄 -->
+    <div class="tab-pane fade" id="t-audit">
+      <h5>操作紀錄（稽核）</h5>
+      <p class="text-muted small">記錄所有後台異動操作的審核者、時間與內容（最近 300 筆）。</p>
+      <button class="btn btn-sm btn-outline-secondary mb-2" onclick="loadAudit()">重新整理</button>
+      <div id="audit-list"></div>
     </div>
   </div>
 
@@ -276,7 +290,8 @@
     // ---------- 設定 + 登入 ----------
     var WORKER_URL = 'https://ntu-coss-api.ntusssa2.workers.dev';
     var CLIENT_ID = '980997931795-8aq3kc0ca3eqovdocb01o646f4effrgi.apps.googleusercontent.com';
-    var TOKEN = null;
+    var OWNERS = ['ntusssa2@gmail.com', 'morgan930906@gmail.com']; // 可調整管理員名單的擁有者
+    var TOKEN = null, ME = '';
 
     // 用 Bootstrap 的 d-none/d-flex 切換（.d-flex 帶 !important，不能只改 style.display）
     function showGate(msg) {
@@ -296,6 +311,7 @@
       TOKEN = resp.credential;
       document.getElementById('gate-msg').textContent = '驗證中…';
       call('whoami').then(function (email) {
+        ME = String(email || '').toLowerCase();
         document.getElementById('admin-email').textContent = email;
         enterApp();
         loadAnnounce();
@@ -602,15 +618,51 @@
       });
     }
     function saveSetting(key, val) { call('saveSetting', key, val).then(function () { notify('已儲存'); }); }
+    function isOwner() { return OWNERS.indexOf(ME) !== -1; }
     function loadAdmins() {
+      var owner = isOwner();
+      document.getElementById('adm-owner-only').classList.toggle('d-none', !owner);
+      document.getElementById('adm-readonly-note').classList.toggle('d-none', owner);
       call('listAdmins').then(function (list) {
-        document.getElementById('adm-list').innerHTML = list.map(function (e) {
-          return '<span class="badge bg-light text-dark border me-1 mb-1">' + esc(e) + ' <a href="#" onclick="rmAdm(\'' + esc(e) + '\');return false;">✕</a></span>';
-        }).join('');
+        document.getElementById('adm-list').innerHTML =
+          '<table class="table table-sm table-bordered align-middle" style="max-width:760px"><thead><tr><th>姓名</th><th>職稱</th><th>Email</th><th></th></tr></thead><tbody>' +
+          list.map(function (a) {
+            var actions = (owner && !a.owner)
+              ? '<button class="btn btn-sm btn-outline-primary" onclick="editAdm(' + JSON.stringify(a).replace(/"/g, '&quot;') + ')">編輯</button> ' +
+                '<button class="btn btn-sm btn-outline-danger" onclick="rmAdm(\'' + esc(a.email) + '\')">移除</button>'
+              : (a.owner ? '<span class="badge bg-dark">擁有者</span>' : '');
+            return '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.title) + '</td><td>' + esc(a.email) + '</td><td>' + actions + '</td></tr>';
+          }).join('') + '</tbody></table>';
       });
     }
-    function addAdm() { var v = document.getElementById('adm-input').value; if (!v) return; call('addAdmin', v).then(function () { document.getElementById('adm-input').value = ''; loadAdmins(); notify('已新增，請記得共用試算表與行事曆'); }); }
+    function editAdm(a) {
+      document.getElementById('adm-email').value = a.email || '';
+      document.getElementById('adm-name').value = a.name || '';
+      document.getElementById('adm-title').value = a.title || '';
+    }
+    function addAdm() {
+      var email = document.getElementById('adm-email').value.trim();
+      if (!email) { notify('請填寫 Email', false); return; }
+      var obj = { email: email, name: document.getElementById('adm-name').value, title: document.getElementById('adm-title').value };
+      call('addAdmin', obj).then(function () {
+        document.getElementById('adm-email').value = '';
+        document.getElementById('adm-name').value = '';
+        document.getElementById('adm-title').value = '';
+        loadAdmins(); notify('已儲存，請記得共用法規資料夾等資源');
+      });
+    }
     function rmAdm(e) { if (confirm('移除管理員 ' + e + '？')) call('removeAdmin', e).then(loadAdmins); }
+    // ---------- 操作紀錄 ----------
+    function loadAudit() {
+      call('listAudit').then(function (rows) {
+        document.getElementById('audit-list').innerHTML = rows.length
+          ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>時間</th><th>審核者</th><th>操作</th><th>內容</th></tr></thead><tbody>' +
+            rows.map(function (r) {
+              return '<tr><td class="small text-nowrap">' + fmt(r.time) + '</td><td class="small">' + esc(r.actor) + '</td><td><code>' + esc(r.action) + '</code></td><td class="small text-muted" style="word-break:break-all">' + esc(r.target) + '</td></tr>';
+            }).join('') + '</tbody></table>'
+          : '<p class="text-muted">尚無紀錄。</p>';
+      });
+    }
 
     // ---------- 陳情 ----------
     function petStatusBadge(s) { return s === 'handled' ? '<span class="badge bg-success">已處理</span>' : '<span class="badge bg-warning text-dark">未處理</span>'; }
@@ -682,6 +734,7 @@
         if (t === '#t-email') loadEmail();
         if (t === '#t-pagetext') loadPageTexts();
         if (t === '#t-system') { loadSettings(); loadAdmins(); }
+        if (t === '#t-audit') loadAudit();
       });
     });
 
