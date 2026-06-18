@@ -242,7 +242,6 @@
         <span class="badge" style="background:#eee;color:#777;border:1px dashed #aaa">未開放</span>
       </div>
       <div id="locker-grid"></div>
-      <div id="locker-detail" class="mt-3"></div>
     </div>
 
     <!-- 投影機 -->
@@ -336,6 +335,18 @@
   </div>
 
   <div id="toast" class="position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:1100;min-width:360px;max-width:92vw"></div>
+
+  <div class="modal fade" id="lockerModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="locker-modal-title">櫃位</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="locker-detail"></div>
+      </div>
+    </div>
+  </div>
   </div><!-- /#app -->
   </main>
 
@@ -624,28 +635,32 @@
       });
       call('saveLockerZones', zones).then(function () { notify('已儲存區域設定'); loadLocker(); });
     }
+    function lockerModalHide() { var m = bootstrap.Modal.getInstance(document.getElementById('lockerModal')); if (m) m.hide(); }
     function lockerDetail(num) {
       var l = window.__lockers[num] || { number: num };
       var borrowed = l.status === 'borrowed';
-      var h = '<div class="card"><div class="card-body"><h6>櫃位 ' + num + '</h6>' +
-        '<p class="small mb-1">開放借用：<b>' + (l.open === 'true' ? '是' : '否') + '</b>　狀態：<b>' + (l.status || 'available') + '</b>' +
+      var h = '<p class="mb-1">開放借用：<b>' + (l.open === 'true' ? '是' : '否') + '</b>　狀態：<b>' + (l.status || 'available') + '</b>' +
         (borrowed ? '<br>借用人：' + esc(l.borrowerName) + '（' + esc(l.dept) + ' / ' + esc(l.studentId) + '）' +
-          '<br>完成借用(鑰匙+押金)：' + (l.completed === 'true' ? '是 ' + fmt(l.completedAt) : '否') : '') + '</p>' +
-        '<button class="btn btn-sm btn-outline-secondary" onclick="toggleOpen(' + num + ',' + (l.open === 'true' ? 'false' : 'true') + ')">' + (l.open === 'true' ? '關閉借用' : '開放借用') + '</button> ' +
-        (borrowed && l.completed !== 'true' ? '<button class="btn btn-sm btn-warning" onclick="completeLk(' + num + ')">完成借用（領鑰匙+押金）</button> ' : '') +
-        (borrowed ? '<button class="btn btn-sm btn-success" onclick="returnLk(' + num + ')">歸還（退押金+收鑰匙）</button> ' : '') +
-        (borrowed ? '<button class="btn btn-sm btn-outline-danger" onclick="clearLk(' + num + ')">清除借用</button> ' : '') +
+          '<br>完成借用(鑰匙+押金)：' + (l.completed === 'true' ? '是 ' + fmt(l.completedAt) : '否') +
+          (l.receiptNo ? '<br>收據編號：<b class="fs-5">' + esc(l.receiptNo) + '</b>' : '') : '') + '</p>' +
+        '<div class="d-flex flex-wrap gap-2 mb-2">' +
+        '<button class="btn btn-sm btn-outline-secondary" onclick="toggleOpen(' + num + ',' + (l.open === 'true' ? 'false' : 'true') + ')">' + (l.open === 'true' ? '關閉借用' : '開放借用') + '</button>' +
+        (borrowed && l.completed !== 'true' ? '<button class="btn btn-sm btn-warning" onclick="completeLk(' + num + ')">完成借用（領鑰匙+押金，派發收據）</button>' : '') +
+        (borrowed ? '<button class="btn btn-sm btn-success" onclick="returnLk(' + num + ')">歸還（退押金+收鑰匙）</button>' : '') +
+        (borrowed ? '<button class="btn btn-sm btn-outline-danger" onclick="clearLk(' + num + ')">清除借用</button>' : '') + '</div>' +
         '<hr><div class="row g-2"><div class="col"><input id="ed-name" class="form-control form-control-sm" placeholder="借用人" value="' + esc(l.borrowerName) + '"></div>' +
         '<div class="col"><input id="ed-dept" class="form-control form-control-sm" placeholder="系級" value="' + esc(l.dept) + '"></div>' +
         '<div class="col"><input id="ed-sid" class="form-control form-control-sm" placeholder="學號" value="' + esc(l.studentId) + '"></div>' +
         '<div class="col-auto"><button class="btn btn-sm btn-primary" onclick="manualBorrow(' + num + ')">手動設定為借出</button></div></div>' +
-        '<small class="text-muted">手動設定可不受「一人一櫃」限制。</small></div></div>';
+        '<small class="text-muted">手動設定可不受「一人一櫃」限制。</small>';
+      document.getElementById('locker-modal-title').textContent = '櫃位 ' + num;
       document.getElementById('locker-detail').innerHTML = h;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('lockerModal')).show();
     }
-    function toggleOpen(num, open) { call('toggleLockerOpen', num, open).then(function () { loadLocker(); document.getElementById('locker-detail').innerHTML = ''; }); }
-    function completeLk(num) { call('completeLocker', num).then(function () { notify('已完成借用'); loadLocker(); lockerDetail(num); }); }
-    function returnLk(num) { if (confirm('確認歸還並退押金？')) call('returnLocker', num).then(function () { notify('已歸還'); loadLocker(); document.getElementById('locker-detail').innerHTML = ''; }); }
-    function clearLk(num) { if (confirm('清除此櫃位借用資料？')) call('clearLocker', num).then(function () { loadLocker(); document.getElementById('locker-detail').innerHTML = ''; }); }
+    function toggleOpen(num, open) { call('toggleLockerOpen', num, open).then(function () { loadLocker(); lockerDetail(num); }); }
+    function completeLk(num) { call('completeLocker', num).then(function (rno) { notify('已完成借用，收據編號 ' + rno); loadLocker(); lockerDetail(num); }); }
+    function returnLk(num) { if (confirm('確認歸還並退押金？')) call('returnLocker', num).then(function () { notify('已歸還'); loadLocker(); lockerModalHide(); }); }
+    function clearLk(num) { if (confirm('清除此櫃位借用資料？')) call('clearLocker', num).then(function () { loadLocker(); lockerModalHide(); }); }
     function manualBorrow(num) {
       call('editLocker', num, { status: 'borrowed', borrowerName: document.getElementById('ed-name').value, dept: document.getElementById('ed-dept').value, studentId: document.getElementById('ed-sid').value, open: 'true' })
         .then(function () { notify('已更新'); loadLocker(); lockerDetail(num); });
@@ -896,19 +911,34 @@
     }
     function delEv(id) { if (confirm('刪除此活動？')) call('deleteEvent', id).then(function () { loadEvents(); }); }
     function viewRegs(eventId, title) {
+      window.__regEvent = { id: eventId, title: title };
       call('listRegistrations', eventId).then(function (rows) {
-        var head = '<div class="d-flex justify-content-between align-items-center mb-1"><h6 class="mb-0">報名名單：' + esc(title) + '（' + rows.length + ' 人）</h6>' +
+        var withEmail = rows.filter(function (r) { return r.email; }).length;
+        var html = '<div class="d-flex justify-content-between align-items-center mb-1"><h6 class="mb-0">報名名單：' + esc(title) + '（' + rows.length + ' 人）</h6>' +
           '<button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById(\'ev-regs\').innerHTML=\'\'">關閉</button></div>';
-        document.getElementById('ev-regs').innerHTML = head + (rows.length
-          ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>#</th><th>姓名</th><th>學號</th><th>系級</th><th>來源</th><th>備註</th><th>時間</th><th></th></tr></thead><tbody>' +
+        html += '<div class="card mb-2"><div class="card-body py-2" style="max-width:820px">' +
+          '<div class="fw-bold mb-1">發信給報名者（' + withEmail + ' 人有填 Email）</div>' +
+          '<input id="reg-subj" class="form-control form-control-sm mb-1" placeholder="主旨">' +
+          '<textarea id="reg-body" class="form-control form-control-sm mb-1" rows="4" placeholder="內文（可自由編輯）"></textarea>' +
+          '<button class="btn btn-sm btn-primary" onclick="sendRegMail()">寄送</button></div></div>';
+        html += rows.length
+          ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>#</th><th>姓名</th><th>學號</th><th>Email</th><th>系級</th><th>來源</th><th>備註</th><th>時間</th><th></th></tr></thead><tbody>' +
             rows.map(function (r, i) {
-              return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.studentId) + '</td><td>' + esc(r.dept) + '</td><td>' + esc(r.source) + '</td><td class="small">' + esc(r.note) + '</td><td class="small text-nowrap">' + fmt(r.createdAt) + '</td>' +
-                '<td><button class="btn btn-sm btn-outline-danger" onclick="delReg(\'' + r.id + '\',\'' + eventId + '\',\'' + esc(title).replace(/'/g, "&#39;") + '\')">刪除</button></td></tr>';
+              return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.studentId) + '</td><td class="small">' + esc(r.email) + '</td><td>' + esc(r.dept) + '</td><td>' + esc(r.source) + '</td><td class="small">' + esc(r.note) + '</td><td class="small text-nowrap">' + fmt(r.createdAt) + '</td>' +
+                '<td><button class="btn btn-sm btn-outline-danger" onclick="delReg(\'' + r.id + '\')">刪除</button></td></tr>';
             }).join('') + '</tbody></table>'
-          : '<p class="text-muted">尚無人報名。</p>');
+          : '<p class="text-muted">尚無人報名。</p>';
+        document.getElementById('ev-regs').innerHTML = html;
       });
     }
-    function delReg(id, eventId, title) { if (confirm('刪除此筆報名？')) call('deleteRegistration', id).then(function () { viewRegs(eventId, title); }); }
+    function sendRegMail() {
+      var ev = window.__regEvent; if (!ev) return;
+      var subj = document.getElementById('reg-subj').value, body = document.getElementById('reg-body').value;
+      if (!subj.trim() || !body.trim()) { notify('請填寫主旨與內文', false); return; }
+      if (!confirm('確定寄送給所有有填 Email 的報名者？')) return;
+      call('emailRegistrants', ev.id, subj, body).then(function (res) { notify('已寄送給 ' + (res && res.sent) + ' 人'); });
+    }
+    function delReg(id) { var ev = window.__regEvent; if (confirm('刪除此筆報名？')) call('deleteRegistration', id).then(function () { viewRegs(ev.id, ev.title); }); }
 
     // ---------- 分頁載入 ----------
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (btn) {
