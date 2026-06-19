@@ -59,7 +59,7 @@
           <li class="nav-item"><a class="nav-link" href="/regulations">法規查詢</a></li>
           <li class="nav-item"><a class="nav-link" href="/venue">場地預約</a></li>
           <li class="nav-item"><a class="nav-link" href="/locker">院櫃預約</a></li>
-          <li class="nav-item"><a class="nav-link" href="/projector">投影機借用</a></li>
+          <li class="nav-item"><a class="nav-link" href="/equipment">設備借用</a></li>
           <li class="nav-item"><a class="nav-link" href="/petition">陳情</a></li>
         </ul>
       </div>
@@ -124,7 +124,7 @@
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-equip"><i class="bi bi-projector me-2"></i>設備管理</button></h2>
           <div id="cat-equip" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
-            <button class="list-group-item list-group-item-action" data-tab="#t-projector">投影機</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-equipment">設備借用</button>
           </div></div>
         </div>
         <div class="accordion-item">
@@ -337,13 +337,26 @@
       <div id="locker-grid"></div>
     </div>
 
-    <!-- 投影機 -->
-    <div class="tab-pane fade" id="t-projector">
+    <!-- 設備借用 -->
+    <div class="tab-pane fade" id="t-equipment">
+      <h5><i class="bi bi-projector me-1"></i>可借用設備清單</h5>
+      <p class="text-muted small">勾選「開放借用」的設備才會出現在前台供同學申請；可隨時新增設備。</p>
+      <div class="row g-2 mb-2" style="max-width:720px">
+        <div class="col-12 col-md-4"><label class="form-label mb-0 small">設備名稱</label><input id="eq-name" class="form-control form-control-sm" placeholder="例：投影機、無線麥克風" /></div>
+        <div class="col-8 col-md-5"><label class="form-label mb-0 small">備註（選填）</label><input id="eq-note" class="form-control form-control-sm" placeholder="例：含轉接頭 / 共 2 台" /></div>
+        <div class="col-4 col-md-2"><label class="form-label mb-0 small">排序</label><input id="eq-order" type="number" class="form-control form-control-sm" value="0" /></div>
+        <div class="col-12"><div class="form-check"><input id="eq-open" type="checkbox" class="form-check-input" checked /><label class="form-check-label small" for="eq-open">開放借用（顯示於前台）</label></div></div>
+      </div>
+      <input type="hidden" id="eq-id" />
+      <button class="btn btn-primary btn-sm" onclick="saveEquip()"><i class="bi bi-save me-1"></i>新增 / 更新設備</button>
+      <button class="btn btn-outline-secondary btn-sm" onclick="resetEquip()">清空</button>
+      <div id="equip-list" class="mt-3"></div>
+      <hr />
       <h5>待審核申請</h5>
-      <div id="proj-pending"></div>
+      <div id="eqb-pending"></div>
       <hr />
       <h5>借用紀錄</h5>
-      <div id="proj-list"></div>
+      <div id="eqb-list"></div>
     </div>
 
     <!-- 陳情 -->
@@ -841,40 +854,83 @@
         .then(function () { notify('已更新'); loadLocker(); lockerDetail(num); });
     }
 
-    // ---------- 投影機 ----------
-    function projStatusBadge(s) {
+    // ---------- 設備借用 ----------
+    function eqStatusBadge(s) {
       var m = { pending: ['warning text-dark', '待審核'], approved: ['info text-dark', '已核准待領用'],
         borrowed: ['primary', '借用中'], returned: ['success', '已歸還'], rejected: ['secondary', '已拒絕'] };
       var x = m[s] || ['secondary', s];
       return '<span class="badge bg-' + x[0] + '">' + x[1] + '</span>';
     }
-    function loadProjPending() {
-      call('listProjector').then(function (rows) {
-        var pend = rows.filter(function (r) { return r.status === 'pending'; });
-        document.getElementById('proj-pending').innerHTML = pend.length ? '<table class="table table-sm table-bordered align-middle"><thead><tr><th>系學會</th><th>姓名</th><th>系級/學號</th><th>事由</th><th>期間</th><th>操作</th></tr></thead><tbody>' +
-          pend.map(function (r) {
-            return '<tr><td>' + esc(r.unit) + '</td><td>' + esc(r.borrowerName) + '</td><td>' + esc(r.dept) + '<br>' + esc(r.studentId) + '</td><td>' + esc(r.purpose) + '</td><td>' + esc(r.fromDate) + ' ~ ' + esc(r.toDate) + '</td>' +
-              '<td><button class="btn btn-sm btn-success" onclick="approveProj(\'' + r.id + '\')">核准</button> ' +
-              '<button class="btn btn-sm btn-danger" onclick="rejectProj(\'' + r.id + '\')">拒絕</button></td></tr>';
-          }).join('') + '</tbody></table>' : '<p class="text-muted">沒有待審核申請。</p>';
-        renderProjList(rows);
+    function loadEquipment() {
+      loadEquipCatalog();
+      loadEquipBookings();
+    }
+    // 設備清單（目錄）
+    function loadEquipCatalog() {
+      call('listEquipment').then(function (rows) {
+        document.getElementById('equip-list').innerHTML = rows.length ? '<table class="table table-sm table-bordered align-middle" style="max-width:720px"><thead><tr><th>排序</th><th>設備名稱</th><th>備註</th><th>開放</th><th>操作</th></tr></thead><tbody>' +
+          rows.map(function (r) {
+            var open = String(r.open) === 'true';
+            return '<tr><td>' + esc(r.order) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.note || '') + '</td>' +
+              '<td><div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" ' + (open ? 'checked' : '') + ' onchange="toggleEquip(\'' + r.id + '\',this.checked)"></div></td>' +
+              '<td><button class="btn btn-sm btn-outline-primary" onclick="editEquip(' + JSON.stringify(r).replace(/"/g, '&quot;') + ')">編輯</button> ' +
+              '<button class="btn btn-sm btn-outline-danger" onclick="delEquip(\'' + r.id + '\')">刪除</button></td></tr>';
+          }).join('') + '</tbody></table>' : '<p class="text-muted">尚無設備，請於上方新增。</p>';
       });
     }
-    function renderProjList(rows) {
-      document.getElementById('proj-list').innerHTML = rows.length ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>姓名</th><th>學號</th><th>狀態</th><th>操作</th></tr></thead><tbody>' +
-        rows.map(function (r) {
-          var actions = '';
-          if (r.status === 'approved') actions += '<button class="btn btn-sm btn-warning" onclick="pickupProj(\'' + r.id + '\')">領用</button> ';
-          if (r.status === 'borrowed') actions += '<button class="btn btn-sm btn-success" onclick="returnProj(\'' + r.id + '\')">歸還</button> ';
-          actions += '<button class="btn btn-sm btn-outline-danger" onclick="delProj(\'' + r.id + '\')">刪除</button>';
-          return '<tr><td>' + esc(r.borrowerName) + '</td><td>' + esc(r.studentId) + '</td><td>' + projStatusBadge(r.status) + '</td><td>' + actions + '</td></tr>';
-        }).join('') + '</tbody></table>' : '<p class="text-muted">無紀錄。</p>';
+    function saveEquip() {
+      var name = document.getElementById('eq-name').value.trim();
+      if (!name) { notify('請輸入設備名稱', false); return; }
+      var obj = {
+        id: document.getElementById('eq-id').value || '',
+        name: name, note: document.getElementById('eq-note').value.trim(),
+        order: document.getElementById('eq-order').value || '0',
+        open: document.getElementById('eq-open').checked,
+      };
+      call('saveEquipment', obj).then(function () { notify('已儲存設備'); resetEquip(); loadEquipCatalog(); });
     }
-    function approveProj(id) { call('approveProjector', id).then(function () { notify('已核准並寄信'); loadProjPending(); }); }
-    function rejectProj(id) { var reason = prompt('拒絕原因（選填）：') || ''; call('rejectProjector', id, reason).then(function () { notify('已拒絕'); loadProjPending(); }); }
-    function pickupProj(id) { call('pickupProjector', id).then(function () { notify('已標記領用'); loadProjPending(); }); }
-    function returnProj(id) { if (confirm('確認歸還？')) call('returnProjector', id).then(function () { notify('已歸還'); loadProjPending(); }); }
-    function delProj(id) { if (confirm('刪除此紀錄？')) call('deleteProjector', id).then(function () { loadProjPending(); }); }
+    function editEquip(r) {
+      document.getElementById('eq-id').value = r.id || '';
+      document.getElementById('eq-name').value = r.name || '';
+      document.getElementById('eq-note').value = r.note || '';
+      document.getElementById('eq-order').value = r.order || '0';
+      document.getElementById('eq-open').checked = String(r.open) === 'true';
+      document.getElementById('eq-name').focus();
+    }
+    function resetEquip() {
+      document.getElementById('eq-id').value = '';
+      document.getElementById('eq-name').value = '';
+      document.getElementById('eq-note').value = '';
+      document.getElementById('eq-order').value = '0';
+      document.getElementById('eq-open').checked = true;
+    }
+    function toggleEquip(id, open) { call('setEquipmentOpen', id, open).then(function () { notify(open ? '已開放借用' : '已關閉借用'); }); }
+    function delEquip(id) { if (confirm('刪除此設備？（不影響既有借用紀錄）')) call('deleteEquipment', id).then(function () { loadEquipCatalog(); }); }
+    // 借用紀錄
+    function loadEquipBookings() {
+      call('listEquipmentBookings').then(function (rows) {
+        var pend = rows.filter(function (r) { return r.status === 'pending'; });
+        document.getElementById('eqb-pending').innerHTML = pend.length ? '<table class="table table-sm table-bordered align-middle"><thead><tr><th>設備</th><th>單位/姓名</th><th>系級/學號</th><th>事由</th><th>期間</th><th>操作</th></tr></thead><tbody>' +
+          pend.map(function (r) {
+            return '<tr><td>' + esc(r.equipmentName) + '</td><td>' + esc(r.unit || '-') + '<br>' + esc(r.borrowerName) + '</td><td>' + esc(r.dept) + '<br>' + esc(r.studentId) + '</td><td>' + esc(r.purpose) + '</td><td>' + esc(r.fromDate) + ' ~ ' + esc(r.toDate) + '</td>' +
+              '<td><button class="btn btn-sm btn-success" onclick="approveEqb(\'' + r.id + '\')">核准</button> ' +
+              '<button class="btn btn-sm btn-danger" onclick="rejectEqb(\'' + r.id + '\')">拒絕</button></td></tr>';
+          }).join('') + '</tbody></table>' : '<p class="text-muted">沒有待審核申請。</p>';
+        document.getElementById('eqb-list').innerHTML = rows.length ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>設備</th><th>姓名</th><th>學號</th><th>狀態</th><th>操作</th></tr></thead><tbody>' +
+          rows.map(function (r) {
+            var actions = '';
+            if (r.status === 'approved') actions += '<button class="btn btn-sm btn-warning" onclick="pickupEqb(\'' + r.id + '\')">領用</button> ';
+            if (r.status === 'borrowed') actions += '<button class="btn btn-sm btn-success" onclick="returnEqb(\'' + r.id + '\')">歸還</button> ';
+            actions += '<button class="btn btn-sm btn-outline-danger" onclick="delEqb(\'' + r.id + '\')">刪除</button>';
+            return '<tr><td>' + esc(r.equipmentName) + '</td><td>' + esc(r.borrowerName) + '</td><td>' + esc(r.studentId) + '</td><td>' + eqStatusBadge(r.status) + '</td><td>' + actions + '</td></tr>';
+          }).join('') + '</tbody></table>' : '<p class="text-muted">無紀錄。</p>';
+      });
+    }
+    function approveEqb(id) { call('approveEquipment', id).then(function () { notify('已核准並寄信'); loadEquipBookings(); }); }
+    function rejectEqb(id) { var reason = prompt('拒絕原因（選填）：') || ''; call('rejectEquipment', id, reason).then(function () { notify('已拒絕'); loadEquipBookings(); }); }
+    function pickupEqb(id) { call('pickupEquipment', id).then(function () { notify('已標記領用'); loadEquipBookings(); }); }
+    function returnEqb(id) { if (confirm('確認歸還？')) call('returnEquipment', id).then(function () { notify('已歸還'); loadEquipBookings(); }); }
+    function delEqb(id) { if (confirm('刪除此紀錄？')) call('deleteEquipment_booking', id).then(function () { loadEquipBookings(); }); }
 
     // ---------- 系統設定 ----------
     function loadSettings() {
@@ -925,7 +981,7 @@
       document.getElementById('admin-mgmt').classList.toggle('d-none', !owner);
     }
     // 頁面權限：依管理員可存取頁面顯示/隱藏側邊選單項目
-    var PAGE_LABELS = { home: '首頁橫幅', announce: '公告', events: '活動', calendar: '行事曆', venue: '場地審核', vset: '場地設定', locker: '院櫃', projector: '投影機', petition: '陳情', roster: '學生名單', email: '信件範本', pagetext: '頁面說明', gongwen: '公文', system: '系統設定' };
+    var PAGE_LABELS = { home: '首頁橫幅', announce: '公告', events: '活動', calendar: '行事曆', venue: '場地審核', vset: '場地設定', locker: '院櫃', equipment: '設備借用', petition: '陳情', roster: '學生名單', email: '信件範本', pagetext: '頁面說明', gongwen: '公文', system: '系統設定' };
     function pageOf(btn) { return (btn.getAttribute('data-tab') || '').replace('#t-', ''); }
     function applyPagePerms(pages) {
       var all = pages === 'all' || isOwner();
@@ -954,7 +1010,7 @@
       { tab: '#t-venue', page: 'venue', icon: 'bi-hourglass-split', color: '#e9a000', title: '場地審核', desc: '3F／207 預約審核' },
       { tab: '#t-vset', page: 'vset', icon: 'bi-sliders', color: '#6d6875', title: '場地設定', desc: '借用區間、封鎖、檢核' },
       { tab: '#t-locker', page: 'locker', icon: 'bi-grid-3x3-gap', color: '#264653', title: '院櫃', desc: '櫃位借用與分區' },
-      { tab: '#t-projector', page: 'projector', icon: 'bi-projector', color: '#0a9396', title: '投影機', desc: '借用審核與領用歸還' },
+      { tab: '#t-equipment', page: 'equipment', icon: 'bi-projector', color: '#0a9396', title: '設備借用', desc: '設備清單、審核、領用歸還' },
       { tab: '#t-home', page: 'home', icon: 'bi-image', color: '#ee9b00', title: '首頁橫幅', desc: '首頁標題背景設定' },
       { tab: '#t-pagetext', page: 'pagetext', icon: 'bi-card-text', color: '#7209b7', title: '頁面說明', desc: '各表單說明文字' },
       { tab: '#t-gongwen', page: 'gongwen', icon: 'bi-file-earmark-text', color: '#3a0ca3', title: '公文產生器', desc: '正式公文／簽到表 PDF' },
@@ -984,7 +1040,7 @@
       var el = document.getElementById('dash-stats');
       var defs = [];
       if (canPage('venue')) defs.push({ label: '待審核場地', color: '#e76f51', tab: '#t-venue', icon: 'bi-hourglass-split', get: function () { return call('listVenueBookings', { status: 'pending' }).then(function (r) { return (r || []).length; }); } });
-      if (canPage('projector')) defs.push({ label: '待審核投影機', color: '#0a9396', tab: '#t-projector', icon: 'bi-projector', get: function () { return call('listProjector').then(function (r) { return (r || []).filter(function (x) { return x.status === 'pending'; }).length; }); } });
+      if (canPage('equipment')) defs.push({ label: '待審核設備', color: '#0a9396', tab: '#t-equipment', icon: 'bi-projector', get: function () { return call('listEquipmentBookings').then(function (r) { return (r || []).filter(function (x) { return x.status === 'pending'; }).length; }); } });
       if (canPage('petition')) defs.push({ label: '待處理陳情', color: '#9c6644', tab: '#t-petition', icon: 'bi-chat-left-text', get: function () { return call('listPetitions').then(function (r) { return (r || []).filter(function (x) { return x.status !== 'handled'; }).length; }); } });
       if (!defs.length) { el.innerHTML = ''; return; }
       el.innerHTML = defs.map(function (d) { return dashStatTile('…', d.label, d.color, d.tab, d.icon); }).join('');
@@ -993,7 +1049,7 @@
           .catch(function () { var nodes = el.querySelectorAll('.dash-stat .num'); if (nodes[i]) nodes[i].textContent = '-'; });
       });
     }
-    var PERM_PAGES = ['home', 'announce', 'events', 'calendar', 'venue', 'vset', 'locker', 'projector', 'petition', 'roster', 'email', 'pagetext', 'gongwen', 'system'];
+    var PERM_PAGES = ['home', 'announce', 'events', 'calendar', 'venue', 'vset', 'locker', 'equipment', 'petition', 'roster', 'email', 'pagetext', 'gongwen', 'system'];
     function renderPermChecks() {
       document.getElementById('adm-perms').innerHTML = PERM_PAGES.map(function (p) {
         return '<div class="form-check form-check-inline m-0"><input class="form-check-input perm-chk" type="checkbox" value="' + p + '" id="perm-' + p + '"><label class="form-check-label small" for="perm-' + p + '">' + (PAGE_LABELS[p] || p) + '</label></div>';
@@ -1381,7 +1437,7 @@
       if (t === '#t-venue') { loadVenuePending(); loadVenueAll(); }
       if (t === '#t-vset') { loadClosed(); loadSettings(); }
       if (t === '#t-locker') loadLocker();
-      if (t === '#t-projector') loadProjPending();
+      if (t === '#t-equipment') loadEquipment();
       if (t === '#t-petition') loadPetitions();
       if (t === '#t-email') loadEmail();
       if (t === '#t-pagetext') loadPageTexts();
