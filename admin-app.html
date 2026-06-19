@@ -389,7 +389,7 @@
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">檔號</label><input id="gw-file" class="form-control form-control-sm" /></div>
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">保存年限</label><input id="gw-keep" class="form-control form-control-sm" /></div>
         <div class="col-12"><button class="btn btn-sm btn-outline-secondary" type="button" onclick="autoGwNo()">自動帶入發文字號／檔號（依系統設定規範遞增）</button></div>
-        <div class="col-12 gw-han"><label class="form-label mb-0 small">地址</label><input id="gw-addr" class="form-control form-control-sm" placeholder="106 臺北市大安區羅斯福路四段一號" /></div>
+        <div class="col-12 gw-han"><label class="form-label mb-0 small">地址</label><input id="gw-addr" class="form-control form-control-sm" value="106台北市大安區羅斯福路四段1號社會科學院207院學生會辦公室" /></div>
         <div class="col-12 gw-han"><label class="form-label mb-0 small">聯絡方式</label><input id="gw-contact" class="form-control form-control-sm" placeholder="承辦人：○○○　電話：○○　Email：ntusssa2@gmail.com" /></div>
         <div class="col-12 gw-han"><label class="form-label mb-0 small">受文者</label><input id="gw-to" class="form-control form-control-sm" /></div>
         <div class="col-6 col-md-3 gw-han"><label class="form-label mb-0 small">速別</label><input id="gw-speed" class="form-control form-control-sm" value="普通件" /></div>
@@ -432,6 +432,16 @@
           <div id="myseal-status" class="small text-muted mt-1"></div>
         </div>
       </div>
+
+      <hr class="my-4" />
+      <h6><i class="bi bi-card-checklist me-1"></i>開會簽到表</h6>
+      <p class="text-muted small">產生空白簽到表 PDF，欄位：職稱／姓名／簽到／簽到時間。</p>
+      <div class="row g-2 mb-2" style="max-width:760px">
+        <div class="col-12 col-md-6"><label class="form-label mb-0 small">會議名稱</label><input id="mtg-title" class="form-control form-control-sm" placeholder="例：第三次幹部會議" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">會議日期</label><input id="mtg-date" type="date" class="form-control form-control-sm" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">列數（空白行）</label><input id="mtg-rows" type="number" class="form-control form-control-sm" value="20" min="1" max="60" /></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="genMeetingSignIn()"><i class="bi bi-download me-1"></i>產生簽到表 PDF</button>
     </div>
 
     <!-- 頁面說明 -->
@@ -1570,17 +1580,15 @@
           seg('說明', v('gw-body'), 14);
           if (v('gw-orig')) block('正本：' + v('gw-orig'), LEFT, 12, CW, 2);
           if (v('gw-copy')) block('副本：' + v('gw-copy'), LEFT, 12, CW, 2);
-          // 署名（置中）＋ 職名章
-          if (v('gw-signer') || jobImg) {
-            y -= 28; var sy = y;
-            var sigSize = 18, sigW = 0, gap2 = sigSize * 0.4, i2;
-            var sig = v('gw-signer');
-            for (i2 = 0; i2 < sig.length; i2++) sigW += tw(sig[i2], sigSize) + (i2 ? gap2 : 0);
-            var sx = LEFT + (CW - sigW) / 2;
-            ensure(sigSize * 1.6);
-            for (i2 = 0; i2 < sig.length; i2++) { page.drawText(sig[i2], { x: sx, y: sy - sigSize, size: sigSize, font: font, color: black }); sx += tw(sig[i2], sigSize) + gap2; }
-            if (jobImg) { var jh = 64, js = jobImg.scale(jh / jobImg.height); page.drawImage(jobImg, { x: sx + 8, y: sy - sigSize - (jh - sigSize) / 2 - 4, width: js.width, height: js.height }); }
-            y -= sigSize * 1.7;
+          // 署名：有職名章就只蓋章（不再寫職銜姓名）；否則置中署名文字
+          if (jobImg) {
+            var jh = 90, js = jobImg.scale(jh / jobImg.height);
+            if (js.width > CW) { js = jobImg.scale(CW / jobImg.width); jh = js.height; }
+            ensure(jh + 24); y -= 24;
+            page.drawImage(jobImg, { x: LEFT + (CW - js.width) / 2, y: y - jh, width: js.width, height: js.height });
+            y -= jh + 6;
+          } else if (v('gw-signer')) {
+            y -= 28; centerSpaced(v('gw-signer'), 18);
           }
         }
 
@@ -1590,6 +1598,57 @@
         var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname + '.pdf';
         document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
         notify('PDF 已下載');
+      } catch (e) {
+        notify('產生失敗：' + (e && e.message ? e.message : e), false);
+      }
+    }
+    // 開會簽到表（pdf-lib，欄位：職稱／姓名／簽到／簽到時間；自動分頁）
+    async function genMeetingSignIn() {
+      try {
+        notify('產生中…首次需下載字型，請稍候');
+        await gwLibs();
+        var P = window.PDFLib;
+        var fontBytes = await gwFontBytes();
+        var doc = await P.PDFDocument.create();
+        doc.registerFontkit(window.fontkit);
+        var font = await doc.embedFont(fontBytes, { subset: false });
+        var black = P.rgb(0, 0, 0);
+        var PW = 595.28, PH = 841.89, M = 56.7, LEFT = M, RIGHT = PW - M, CW = RIGHT - LEFT;
+        var title = document.getElementById('mtg-title').value.trim() || '開會簽到表';
+        var dval = document.getElementById('mtg-date').value;
+        var nrows = Math.max(1, Math.min(60, Number(document.getElementById('mtg-rows').value) || 20));
+        var cols = [['職稱', 0.18], ['姓名', 0.22], ['簽到', 0.30], ['簽到時間', 0.30]];
+        var widths = cols.map(function (c) { return c[1] * CW; });
+        function colX(i) { var x = LEFT; for (var k = 0; k < i; k++) x += widths[k]; return x; }
+        function tw(t, sz) { return font.widthOfTextAtSize(t, sz); }
+        var rowH = 30, headH = 30, page, y;
+        function drawRow(vals, h, isHead) {
+          var topY = y, botY = y - h;
+          page.drawLine({ start: { x: LEFT, y: topY }, end: { x: RIGHT, y: topY }, thickness: 1, color: black });
+          page.drawLine({ start: { x: LEFT, y: botY }, end: { x: RIGHT, y: botY }, thickness: 1, color: black });
+          for (var i = 0; i <= cols.length; i++) { var x = (i < cols.length) ? colX(i) : RIGHT; page.drawLine({ start: { x: x, y: topY }, end: { x: x, y: botY }, thickness: 1, color: black }); }
+          if (vals) { var sz = isHead ? 13 : 12; for (var j = 0; j < cols.length; j++) { var t = vals[j] || ''; if (t) page.drawText(t, { x: colX(j) + (widths[j] - tw(t, sz)) / 2, y: botY + (h - sz) / 2 + 1, size: sz, font: font, color: black }); } }
+          y = botY;
+        }
+        function startPage(withTitle) {
+          page = doc.addPage([PW, PH]); y = PH - M;
+          if (withTitle) {
+            var ts = 22; page.drawText(title, { x: LEFT + (CW - tw(title, ts)) / 2, y: y - ts, size: ts, font: font, color: black }); y -= ts + 14;
+            if (dval) { page.drawText('會議日期：' + rocDate(dval), { x: LEFT, y: y - 12, size: 12, font: font, color: black }); y -= 24; }
+          }
+          drawRow(cols.map(function (c) { return c[0]; }), headH, true);
+        }
+        startPage(true);
+        for (var r = 0; r < nrows; r++) {
+          if (y - rowH < M) startPage(false);
+          drawRow(null, rowH, false);
+        }
+        var bytes = await doc.save();
+        var blob = new Blob([bytes], { type: 'application/pdf' });
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = title.replace(/[\\/:*?"<>|\s]+/g, '_') + '_簽到表.pdf';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+        notify('簽到表 PDF 已下載');
       } catch (e) {
         notify('產生失敗：' + (e && e.message ? e.message : e), false);
       }
@@ -1605,6 +1664,8 @@
       var gd = document.getElementById('gw-date'); if (!gd.value) gd.value = new Date().toISOString().slice(0, 10);
       gwToggle();
       loadSeals();
+      var ct = document.getElementById('gw-contact');
+      if (ct && !ct.value && MEPROF) ct.value = '承辦人：' + (MEPROF.name || '') + '　Email：ntusssa2@gmail.com';
       var s = document.getElementById('gw-signer');
       if (!s.value) {
         call('getSettingsAll').then(function (rows) {
