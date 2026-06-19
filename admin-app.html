@@ -1458,7 +1458,8 @@
 
         var doc = await P.PDFDocument.create();
         doc.registerFontkit(window.fontkit);
-        var font = await doc.embedFont(fontBytes, { subset: true });
+        // subset:false — 子集化在 CJK 會漏字（字可複製但不顯示），改內嵌完整字型確保不缺字
+        var font = await doc.embedFont(fontBytes, { subset: false });
         var black = P.rgb(0, 0, 0);
 
         var PW = 595.28, PH = 841.89, M = 56.7, LEFT = M, RIGHT = PW - M, CW = RIGHT - LEFT;
