@@ -247,6 +247,13 @@
         <div class="col-auto"><button class="btn btn-danger" onclick="addClosed()">新增封鎖</button></div>
       </div>
       <div id="closed-list"></div>
+
+      <hr />
+      <h5>207 借用檢核</h5>
+      <div class="form-check form-switch mb-1">
+        <input id="wl-toggle" class="form-check-input" type="checkbox" onchange="saveSetting('v207_use_whitelist', this.checked ? 'true':'false')" />
+        <label class="form-check-label">207 微學開 借用時檢核學生名單（名單於「學生名單」分頁設定）</label>
+      </div>
     </div>
 
     <!-- 學生名單 -->
@@ -258,16 +265,17 @@
         <input id="wl-url" class="form-control" placeholder="https://docs.google.com/spreadsheets/d/..." />
         <button class="btn btn-primary" onclick="saveSetting('v207_whitelist_url', document.getElementById('wl-url').value)">儲存</button>
       </div>
-      <h6>檢核設定</h6>
-      <div class="form-check form-switch mb-1">
-        <input id="wl-toggle" class="form-check-input" type="checkbox" onchange="saveSetting('v207_use_whitelist', this.checked ? 'true':'false')" />
-        <label class="form-check-label">207 微學開 借用時檢核學生名單</label>
+
+      <h6>名單查詢</h6>
+      <p class="text-muted small mb-1">輸入學號，查詢是否在學生名單內（即時讀取上方 Sheet）。</p>
+      <div class="input-group mb-2" style="max-width:440px">
+        <span class="input-group-text">學號</span>
+        <input id="roster-q" class="form-control" placeholder="輸入學號查詢" onkeydown="if(event.key==='Enter')rosterSearch()" />
+        <button class="btn btn-primary" onclick="rosterSearch()">查詢</button>
       </div>
-      <div class="form-check form-switch mb-2">
-        <input id="lk-roster" class="form-check-input" type="checkbox" onchange="saveSetting('locker_use_roster', this.checked ? 'true':'false')" />
-        <label class="form-check-label">院櫃借用時檢核學生名單</label>
-      </div>
-      <p class="text-muted small">活動報名的名單檢核請於「活動」分頁各活動個別設定。</p>
+      <div id="roster-result" class="mb-2"></div>
+
+      <p class="text-muted small mt-3">借用 / 報名是否檢核學生名單，請於「場地設定」（207）、「院櫃」、以及各「活動」分頁個別開啟。</p>
     </div>
 
     <!-- 院櫃 -->
@@ -278,6 +286,11 @@
         <button class="btn btn-sm btn-outline-secondary mt-1" onclick="addZone()">＋ 新增區域</button>
         <button class="btn btn-sm btn-primary mt-1" onclick="saveZones()">儲存區域設定</button>
         <div class="form-text">每區設定編號範圍與是否開放借用（關閉＝前台隱藏該區）。建議以 5 的倍數為界（每欄 5 格）較整齊；最大編號會自動建立對應櫃位。</div>
+        <hr class="my-2" />
+        <div class="form-check form-switch">
+          <input id="lk-roster" class="form-check-input" type="checkbox" onchange="saveSetting('locker_use_roster', this.checked ? 'true':'false')" />
+          <label class="form-check-label">院櫃借用時檢核學生名單（名單於「學生名單」分頁設定）</label>
+        </div>
       </div></div>
       <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
         <button class="btn btn-outline-success btn-sm" onclick="allOpen(true)">全部開放借用</button>
@@ -370,6 +383,8 @@
 
     <!-- 系統設定 -->
     <div class="tab-pane fade" id="t-system">
+      <div class="card mb-3"><div class="card-body">
+      <h4 class="mb-3"><i class="bi bi-sliders me-2"></i>一般設定</h4>
       <h5>法規資料夾</h5>
       <div class="input-group mb-3" style="max-width:560px">
         <span class="input-group-text">Drive 資料夾 ID</span>
@@ -403,8 +418,10 @@
         <div class="col-12 col-md-2 d-grid"><button class="btn btn-primary btn-sm" onclick="saveGwScheme()">儲存</button></div>
         <div class="col-12"><div class="input-group input-group-sm"><span class="input-group-text">預設署名</span><input id="gw-defsigner" class="form-control" placeholder="選舉委員會主任委員　○○○" /><button class="btn btn-primary" onclick="saveSetting('gongwen_signer', document.getElementById('gw-defsigner').value)">儲存</button></div></div>
       </div>
+      </div></div><!-- /一般設定 card -->
 
-      <hr />
+      <div class="card mb-3"><div class="card-body">
+      <h4 class="mb-3"><i class="bi bi-shield-lock me-2"></i>管理員設定</h4>
       <h5>隱私權條款</h5>
       <p class="text-muted small mb-1">支援 Markdown。留空則使用系統預設條款。</p>
       <textarea id="set-privacy" class="form-control mb-2" rows="8" style="max-width:820px"></textarea>
@@ -412,18 +429,23 @@
 
       <div id="admin-mgmt" class="d-none">
       <hr />
-      <h5>管理員名單</h5>
+      <h5>管理員名單與權限</h5>
       <div id="adm-owner-only">
         <p class="text-muted small mb-2">新增 / 編輯管理員（僅擁有者可調整）。Email 為識別鍵；同 Email 再送出即為編輯。</p>
         <div class="row g-2 mb-2" style="max-width:760px">
-          <div class="col-12 col-md-4"><input id="adm-email" class="form-control form-control-sm" placeholder="Google Email" /></div>
-          <div class="col-6 col-md-3"><input id="adm-name" class="form-control form-control-sm" placeholder="姓名" /></div>
+          <div class="col-12 col-md-5"><input id="adm-email" class="form-control form-control-sm" placeholder="Google Email" /></div>
+          <div class="col-6 col-md-4"><input id="adm-name" class="form-control form-control-sm" placeholder="姓名" /></div>
           <div class="col-6 col-md-3"><input id="adm-title" class="form-control form-control-sm" placeholder="職稱" /></div>
-          <div class="col-12 col-md-2 d-grid"><button class="btn btn-primary btn-sm" onclick="addAdm()">新增/更新</button></div>
         </div>
+        <div class="mb-1">
+          <div class="form-check"><input id="adm-all" type="checkbox" class="form-check-input" onchange="document.getElementById('adm-perms').classList.toggle('d-none', this.checked)" /><label class="form-check-label small fw-bold" for="adm-all">完整權限（全部頁面）</label></div>
+          <div id="adm-perms" class="d-flex flex-wrap gap-2 mt-1 p-2 border rounded" style="max-width:760px"></div>
+        </div>
+        <button class="btn btn-primary btn-sm mb-2" onclick="addAdm()">新增 / 更新管理員</button>
       </div>
       <div id="adm-list"></div>
       </div><!-- /#admin-mgmt -->
+      </div></div><!-- /管理員設定 card -->
     </div>
 
     <!-- 操作紀錄 -->
@@ -489,33 +511,54 @@
       var pn = document.getElementById('public-nav'); if (pn) pn.classList.add('d-none');
       document.getElementById('app').classList.remove('d-none');
     }
-    function onSignIn(resp) {
-      if (!resp || !resp.credential) { showGate('未取得 Google 憑證，請重試。'); return; }
-      TOKEN = resp.credential;
+    var TOKEN_KEY = 'coss_admin_token';
+    // 解出 JWT 的 exp（秒）；失敗回 0
+    function tokenExp(t) {
+      try { var p = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); return Number(p.exp) || 0; } catch (e) { return 0; }
+    }
+    function tokenValid(t) { return !!t && tokenExp(t) * 1000 > Date.now() + 5000; }
+    function saveToken(t) { try { sessionStorage.setItem(TOKEN_KEY, t); } catch (e) {} }
+    function clearToken() { try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+
+    // 用一個有效 token 進入後台（登入成功或重新整理後復原皆走這裡）
+    function useToken(token) {
+      TOKEN = token;
       document.getElementById('gate-msg').textContent = '驗證中…';
-      call('whoami').then(function (email) {
+      return call('whoami').then(function (email) {
         ME = String(email || '').toLowerCase();
         document.getElementById('admin-email').textContent = email;
+        saveToken(token);
         enterApp();
         applyOwnerUI();
-        call('getMe').then(function (p) {
+        return call('getMe').then(function (p) {
           MEPROF = p || {};
           var g = ((MEPROF.title || '') + ' ' + (MEPROF.name || '')).trim();
           document.getElementById('greet').textContent = g || MEPROF.email || '管理員';
           resetAnnounce(); resetEv();
-        }).catch(function () {});
-        loadHero();
+          applyPagePerms(MEPROF.pages);
+          var homeBtn = document.querySelector('#sidebar [data-tab="#t-home"]');
+          if (homeBtn && !homeBtn.classList.contains('d-none')) goTab('#t-home');
+          else { var first = document.querySelector('#sidebar [data-tab]:not(.d-none)'); if (first) goTab(first.getAttribute('data-tab')); else loadHero(); }
+        }).catch(function () { loadHero(); });
       }).catch(function (e) {
-        TOKEN = null;
+        TOKEN = null; clearToken();
         showGate('登入失敗：' + (e && e.message ? e.message : e));
       });
     }
+    function onSignIn(resp) {
+      if (!resp || !resp.credential) { showGate('未取得 Google 憑證，請重試。'); return; }
+      useToken(resp.credential);
+    }
     function signOut() {
-      TOKEN = null;
+      TOKEN = null; clearToken();
       try { google.accounts.id.disableAutoSelect(); } catch (e) {}
       showGate('已登出。');
     }
     window.addEventListener('load', function () {
+      // 重新整理：若 session 內仍有未過期的 token，直接復原登入，免重新登入
+      var saved = null;
+      try { saved = sessionStorage.getItem(TOKEN_KEY); } catch (e) {}
+      if (tokenValid(saved)) useToken(saved); else clearToken();
       function tryInit() {
         if (!(window.google && google.accounts && google.accounts.id)) { setTimeout(tryInit, 200); return; }
         google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onSignIn });
@@ -548,7 +591,7 @@
         body: JSON.stringify({ action: name, args: args }),
       }).then(function (r) {
         return r.json().catch(function () { return {}; }).then(function (data) {
-          if (r.status === 401) { showGate(data.error || '登入已過期，請重新登入。'); throw new Error(data.error || '未登入'); }
+          if (r.status === 401) { TOKEN = null; clearToken(); showGate(data.error || '登入已過期，請重新登入。'); throw new Error(data.error || '未登入'); }
           if (!r.ok) { notify(data.error || ('HTTP ' + r.status), false); throw new Error(data.error || ('HTTP ' + r.status)); }
           return data.result;
         });
@@ -693,6 +736,7 @@
       call('getLockerAdmin').then(function (d) {
         var map = {}; d.lockers.forEach(function (l) { map[Number(l.number)] = l; });
         window.__lockers = map;
+        if (document.getElementById('lk-roster')) document.getElementById('lk-roster').checked = !!d.useRoster;
         window.__zones = d.zones || [];
         renderZoneEditor();
         var html = '';
@@ -857,17 +901,42 @@
       document.getElementById('tab-audit-li').classList.toggle('d-none', !owner);
       document.getElementById('admin-mgmt').classList.toggle('d-none', !owner);
     }
+    // 頁面權限：依管理員可存取頁面顯示/隱藏側邊選單項目
+    var PAGE_LABELS = { home: '首頁橫幅', announce: '公告', events: '活動', calendar: '行事曆', venue: '場地審核', vset: '場地設定', locker: '院櫃', projector: '投影機', petition: '陳情', roster: '學生名單', email: '信件範本', pagetext: '頁面說明', gongwen: '公文', system: '系統設定' };
+    function pageOf(btn) { return (btn.getAttribute('data-tab') || '').replace('#t-', ''); }
+    function applyPagePerms(pages) {
+      var all = pages === 'all' || isOwner();
+      document.querySelectorAll('#sidebar [data-tab]').forEach(function (b) {
+        if (b.id === 'tab-audit-li') return; // 由 applyOwnerUI 控制
+        var ok = all || (Array.isArray(pages) && pages.indexOf(pageOf(b)) !== -1);
+        b.classList.toggle('d-none', !ok);
+      });
+      document.querySelectorAll('#navacc .accordion-item').forEach(function (item) {
+        item.classList.toggle('d-none', !item.querySelector('.list-group-item-action:not(.d-none)'));
+      });
+    }
+    var PERM_PAGES = ['home', 'announce', 'events', 'calendar', 'venue', 'vset', 'locker', 'projector', 'petition', 'roster', 'email', 'pagetext', 'gongwen', 'system'];
+    function renderPermChecks() {
+      document.getElementById('adm-perms').innerHTML = PERM_PAGES.map(function (p) {
+        return '<div class="form-check form-check-inline m-0"><input class="form-check-input perm-chk" type="checkbox" value="' + p + '" id="perm-' + p + '"><label class="form-check-label small" for="perm-' + p + '">' + (PAGE_LABELS[p] || p) + '</label></div>';
+      }).join('');
+    }
+    function permLabel(pages) {
+      if (!pages || pages === 'all') return '<span class="badge bg-success">完整權限</span>';
+      return pages.split(',').filter(Boolean).map(function (p) { return '<span class="badge bg-light text-dark border me-1">' + (PAGE_LABELS[p] || p) + '</span>'; }).join('') || '<span class="text-muted small">未設定</span>';
+    }
     function loadAdmins() {
       if (!isOwner()) return;
+      if (!document.querySelector('#adm-perms .perm-chk')) renderPermChecks();
       call('listAdmins').then(function (list) {
         document.getElementById('adm-list').innerHTML =
-          '<table class="table table-sm table-bordered align-middle" style="max-width:760px"><thead><tr><th>姓名</th><th>職稱</th><th>Email</th><th></th></tr></thead><tbody>' +
+          '<table class="table table-sm table-bordered align-middle" style="max-width:900px"><thead><tr><th>姓名</th><th>職稱</th><th>Email</th><th>可存取頁面</th><th></th></tr></thead><tbody>' +
           list.map(function (a) {
             var actions = (!a.owner)
               ? '<button class="btn btn-sm btn-outline-primary" onclick="editAdm(' + JSON.stringify(a).replace(/"/g, '&quot;') + ')">編輯</button> ' +
                 '<button class="btn btn-sm btn-outline-danger" onclick="rmAdm(\'' + esc(a.email) + '\')">移除</button>'
-              : (a.owner ? '<span class="badge bg-dark">擁有者</span>' : '');
-            return '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.title) + '</td><td>' + esc(a.email) + '</td><td>' + actions + '</td></tr>';
+              : '<span class="badge bg-dark">擁有者</span>';
+            return '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.title) + '</td><td>' + esc(a.email) + '</td><td>' + (a.owner ? '<span class="badge bg-dark">全部</span>' : permLabel(a.pages)) + '</td><td>' + actions + '</td></tr>';
           }).join('') + '</tbody></table>';
       });
     }
@@ -875,28 +944,60 @@
       document.getElementById('adm-email').value = a.email || '';
       document.getElementById('adm-name').value = a.name || '';
       document.getElementById('adm-title').value = a.title || '';
+      if (!document.querySelector('#adm-perms .perm-chk')) renderPermChecks();
+      var all = !a.pages || a.pages === 'all';
+      document.getElementById('adm-all').checked = all;
+      document.getElementById('adm-perms').classList.toggle('d-none', all);
+      var set = all ? [] : a.pages.split(',');
+      document.querySelectorAll('#adm-perms .perm-chk').forEach(function (c) { c.checked = set.indexOf(c.value) !== -1; });
+    }
+    function resetAdmForm() {
+      ['adm-email', 'adm-name', 'adm-title'].forEach(function (i) { document.getElementById(i).value = ''; });
+      document.getElementById('adm-all').checked = false;
+      document.getElementById('adm-perms').classList.remove('d-none');
+      document.querySelectorAll('#adm-perms .perm-chk').forEach(function (c) { c.checked = false; });
     }
     function addAdm() {
       var email = document.getElementById('adm-email').value.trim();
       if (!email) { notify('請填寫 Email', false); return; }
-      var obj = { email: email, name: document.getElementById('adm-name').value, title: document.getElementById('adm-title').value };
-      call('addAdmin', obj).then(function () {
-        document.getElementById('adm-email').value = '';
-        document.getElementById('adm-name').value = '';
-        document.getElementById('adm-title').value = '';
-        loadAdmins(); notify('已儲存，請記得共用法規資料夾等資源');
-      });
+      var pages;
+      if (document.getElementById('adm-all').checked) { pages = 'all'; }
+      else {
+        pages = [];
+        document.querySelectorAll('#adm-perms .perm-chk:checked').forEach(function (c) { pages.push(c.value); });
+        if (!pages.length) { notify('請勾選可存取頁面，或選「完整權限」', false); return; }
+      }
+      var obj = { email: email, name: document.getElementById('adm-name').value, title: document.getElementById('adm-title').value, pages: pages };
+      call('addAdmin', obj).then(function () { resetAdmForm(); loadAdmins(); notify('已儲存管理員權限'); });
     }
     function rmAdm(e) { if (confirm('移除管理員 ' + e + '？')) call('removeAdmin', e).then(loadAdmins); }
-    // ---------- 操作紀錄 ----------
-    function loadAudit() {
-      call('listAudit').then(function (rows) {
-        document.getElementById('audit-list').innerHTML = rows.length
+    // ---------- 操作紀錄（每頁 50 筆） ----------
+    function loadAudit(page) {
+      call('listAudit', page || 0).then(function (res) {
+        var rows = res.rows || [];
+        var body = rows.length
           ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>時間</th><th>審核者</th><th>操作</th><th>內容</th></tr></thead><tbody>' +
             rows.map(function (r) {
               return '<tr><td class="small text-nowrap">' + fmt(r.time) + '</td><td class="small">' + esc(r.actor) + '</td><td><code>' + esc(r.action) + '</code></td><td class="small text-muted" style="word-break:break-all">' + esc(r.target) + '</td></tr>';
             }).join('') + '</tbody></table>'
           : '<p class="text-muted">尚無紀錄。</p>';
+        var from = res.total ? res.page * res.size + 1 : 0;
+        var to = res.page * res.size + rows.length;
+        var pager = '<div class="d-flex align-items-center gap-2 mb-2">' +
+          '<button class="btn btn-sm btn-outline-secondary" ' + (res.page <= 0 ? 'disabled' : '') + ' onclick="loadAudit(' + (res.page - 1) + ')">上一頁</button>' +
+          '<button class="btn btn-sm btn-outline-secondary" ' + (res.hasMore ? '' : 'disabled') + ' onclick="loadAudit(' + (res.page + 1) + ')">下一頁</button>' +
+          '<span class="small text-muted">' + from + '–' + to + ' / 共 ' + res.total + ' 筆</span></div>';
+        document.getElementById('audit-list').innerHTML = pager + body;
+      });
+    }
+    // ---------- 學生名單查詢 ----------
+    function rosterSearch() {
+      var sid = document.getElementById('roster-q').value.trim();
+      if (!sid) return;
+      call('rosterLookup', sid).then(function (r) {
+        document.getElementById('roster-result').innerHTML = r.found
+          ? '<div class="alert alert-success py-2 mb-0">「' + esc(sid) + '」<b>在</b>學生名單內。（名單共 ' + r.total + ' 筆）</div>'
+          : '<div class="alert alert-warning py-2 mb-0">「' + esc(sid) + '」<b>不在</b>學生名單內。（名單共 ' + r.total + ' 筆）</div>';
       });
     }
 
