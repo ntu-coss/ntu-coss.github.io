@@ -925,18 +925,25 @@
       if (!pages || pages === 'all') return '<span class="badge bg-success">完整權限</span>';
       return pages.split(',').filter(Boolean).map(function (p) { return '<span class="badge bg-light text-dark border me-1">' + (PAGE_LABELS[p] || p) + '</span>'; }).join('') || '<span class="text-muted small">未設定</span>';
     }
+    function fmtLogin(iso) {
+      if (!iso) return '<span class="text-muted small">尚未登入</span>';
+      var d = new Date(iso); if (isNaN(d)) return esc(iso);
+      try {
+        return '<span class="small">' + d.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) + '</span>';
+      } catch (e) { return '<span class="small">' + esc(iso) + '</span>'; }
+    }
     function loadAdmins() {
       if (!isOwner()) return;
       if (!document.querySelector('#adm-perms .perm-chk')) renderPermChecks();
       call('listAdmins').then(function (list) {
         document.getElementById('adm-list').innerHTML =
-          '<table class="table table-sm table-bordered align-middle" style="max-width:900px"><thead><tr><th>姓名</th><th>職稱</th><th>Email</th><th>可存取頁面</th><th></th></tr></thead><tbody>' +
+          '<table class="table table-sm table-bordered align-middle" style="max-width:980px"><thead><tr><th>姓名</th><th>職稱</th><th>Email</th><th>可存取頁面</th><th>最後登入</th><th></th></tr></thead><tbody>' +
           list.map(function (a) {
             var actions = (!a.owner)
               ? '<button class="btn btn-sm btn-outline-primary" onclick="editAdm(' + JSON.stringify(a).replace(/"/g, '&quot;') + ')">編輯</button> ' +
                 '<button class="btn btn-sm btn-outline-danger" onclick="rmAdm(\'' + esc(a.email) + '\')">移除</button>'
               : '<span class="badge bg-dark">擁有者</span>';
-            return '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.title) + '</td><td>' + esc(a.email) + '</td><td>' + (a.owner ? '<span class="badge bg-dark">全部</span>' : permLabel(a.pages)) + '</td><td>' + actions + '</td></tr>';
+            return '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.title) + '</td><td>' + esc(a.email) + '</td><td>' + (a.owner ? '<span class="badge bg-dark">全部</span>' : permLabel(a.pages)) + '</td><td>' + fmtLogin(a.lastLogin) + '</td><td>' + actions + '</td></tr>';
           }).join('') + '</tbody></table>';
       });
     }
