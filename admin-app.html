@@ -380,7 +380,7 @@
     <!-- 公文產生器 -->
     <div class="tab-pane fade" id="t-gongwen">
       <h5><i class="bi bi-file-earmark-text me-1"></i>正式公文產生器</h5>
-      <p class="text-muted small">填寫後按「產生 PDF」，於列印視窗選擇「另存為 PDF」即可。</p>
+      <p class="text-muted small">填寫後按「產生並下載 PDF」，直接下載可選取文字的 PDF 檔。</p>
       <div class="row g-2" style="max-width:880px">
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">文別</label>
           <select id="gw-type" class="form-select form-select-sm" onchange="gwToggle()"><option>公告</option><option>函</option><option>書函</option><option>令</option><option>開會通知單</option></select></div>
@@ -402,14 +402,36 @@
         <div class="col-12 col-md-6 gw-han"><label class="form-label mb-0 small">正本</label><input id="gw-orig" class="form-control form-control-sm" /></div>
         <div class="col-12 col-md-6 gw-han"><label class="form-label mb-0 small">副本</label><input id="gw-copy" class="form-control form-control-sm" /></div>
         <div class="col-12 col-md-6"><label class="form-label mb-0 small">署名（職銜 姓名）</label><input id="gw-signer" class="form-control form-control-sm" placeholder="主任委員　＿＿＿" /></div>
-        <div class="col-12 col-md-6"><label class="form-label mb-0 small">機關印信文字</label><input id="gw-sealtext" class="form-control form-control-sm" value="國立臺灣大學社會科學院學生會" /></div>
+        <div class="col-12 col-md-6"><label class="form-label mb-0 small">機關印信</label><select id="gw-seal-id" class="form-select form-select-sm"></select></div>
         <div class="col-12 d-flex flex-wrap gap-3 ms-2">
-          <div class="form-check"><input id="gw-seal" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">加蓋機關印信（紅色正方形・隸書）</label></div>
-          <div class="form-check gw-han"><input id="gw-jobseal" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">加蓋職名章（藍色，函用）</label></div>
+          <div class="form-check"><input id="gw-seal" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">加蓋機關印信</label></div>
+          <div class="form-check gw-han"><input id="gw-jobseal" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">加蓋本人職名章（函用）</label></div>
         </div>
       </div>
-      <p class="text-muted small mt-2 mb-0">公告：主旨／依據／公告事項三段，機關印信置右側、首長職銜姓名於下方；函：含受文者、說明、正本副本等。標楷體＋隸書印信需系統已安裝對應字型。</p>
-      <button class="btn btn-primary mt-2" onclick="genGongwen()"><i class="bi bi-printer me-1"></i>產生 PDF（列印）</button>
+      <p class="text-muted small mt-2 mb-0">公告：主旨／依據／公告事項三段，機關印信置右側、首長職銜姓名於下方；函：含受文者、說明、正本副本等。產生真正可選取文字的 PDF（內嵌 LXGW WenKai 楷體），印信為圖片。</p>
+      <button class="btn btn-primary mt-2" onclick="genGongwen()"><i class="bi bi-download me-1"></i>產生並下載 PDF</button>
+
+      <hr class="my-4" />
+      <h6><i class="bi bi-stamp me-1"></i>印信設定</h6>
+      <div class="row g-2 mb-2" style="max-width:760px">
+        <div class="col-12 col-md-4"><label class="form-label mb-0 small">機關印信名稱</label><input id="seal-name" class="form-control form-control-sm" placeholder="例：學生會關防" /></div>
+        <div class="col-8 col-md-6"><label class="form-label mb-0 small">Drive 圖片連結／ID</label><input id="seal-file" class="form-control form-control-sm" placeholder="https://drive.google.com/file/d/.../view" /></div>
+        <div class="col-4 col-md-2"><label class="form-label mb-0 small">排序</label><input id="seal-order" type="number" class="form-control form-control-sm" value="0" /></div>
+      </div>
+      <input type="hidden" id="seal-id" />
+      <button class="btn btn-primary btn-sm" onclick="saveSealUI()"><i class="bi bi-save me-1"></i>新增 / 更新印信</button>
+      <button class="btn btn-outline-secondary btn-sm" onclick="resetSealForm()">清空</button>
+      <p class="text-muted small mt-1 mb-1">印信圖片請上傳至 Drive，並分享給服務帳戶 <code>coss-sa-backend@ntu-coss-web.iam.gserviceaccount.com</code>（同法規資料夾作法），建議去背 PNG。</p>
+      <div id="seal-list" class="mb-3"></div>
+      <div class="row g-2" style="max-width:760px">
+        <div class="col-12"><label class="form-label mb-0 small">我的職名章（僅你自己使用，函上蓋章）</label>
+          <div class="input-group input-group-sm">
+            <input id="myseal-file" class="form-control" placeholder="Drive 圖片連結／ID（留空＝不蓋）" />
+            <button class="btn btn-primary" onclick="saveMyJobSeal()">儲存</button>
+          </div>
+          <div id="myseal-status" class="small text-muted mt-1"></div>
+        </div>
+      </div>
     </div>
 
     <!-- 頁面說明 -->
@@ -1348,63 +1370,228 @@
       document.querySelectorAll('#t-gongwen .gw-han').forEach(function (el) { el.classList.toggle('d-none', anno); });
       document.querySelectorAll('#t-gongwen .gw-anno').forEach(function (el) { el.classList.toggle('d-none', !anno); });
     }
-    // 機關印信：把文字排成填滿方框的格子（由右至左、由上至下）
-    function sealGrid(text, extraClass) {
-      var chars = String(text).split('');
-      var n = chars.length || 1;
-      var cols = Math.ceil(Math.sqrt(n));
-      var rows = Math.ceil(n / cols);
-      var fs = Math.floor(Math.min(104 / cols, 104 / rows) * 0.88);
-      var cells = chars.map(function (c) { return '<div class="sc">' + esc(c) + '</div>'; }).join('');
-      return '<div class="seal-mark ' + (extraClass || '') + '" style="grid-template-rows:repeat(' + rows + ',1fr);font-size:' + fs + 'px">' + cells + '</div>';
+    // ===== 機關印信 / 職名章 設定 =====
+    var __seals = [];
+    function loadSeals() {
+      call('listSeals').then(function (rows) {
+        __seals = rows || [];
+        var sel = document.getElementById('gw-seal-id');
+        if (sel) {
+          var cur = sel.value;
+          sel.innerHTML = '<option value="">（無）</option>' + __seals.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + '</option>'; }).join('');
+          if (cur) sel.value = cur; else if (__seals.length) sel.value = __seals[0].id;
+        }
+        document.getElementById('seal-list').innerHTML = __seals.length ? '<table class="table table-sm table-bordered align-middle" style="max-width:760px"><thead><tr><th>排序</th><th>名稱</th><th>檔案</th><th>操作</th></tr></thead><tbody>' +
+          __seals.map(function (s) {
+            return '<tr><td>' + esc(s.order) + '</td><td>' + esc(s.name) + '</td><td class="small text-muted text-truncate" style="max-width:240px">' + esc(s.fileId) + '</td>' +
+              '<td><button class="btn btn-sm btn-outline-primary" onclick="editSeal(' + JSON.stringify(s).replace(/"/g, '&quot;') + ')">編輯</button> ' +
+              '<button class="btn btn-sm btn-outline-danger" onclick="delSeal(\'' + s.id + '\')">刪除</button></td></tr>';
+          }).join('') + '</tbody></table>' : '<p class="text-muted small">尚無機關印信，請於上方新增。</p>';
+      });
+      // 我的職名章
+      var ms = document.getElementById('myseal-status');
+      if (MEPROF && MEPROF.jobSeal) { document.getElementById('myseal-file').value = MEPROF.jobSeal; if (ms) ms.textContent = '目前已設定職名章。'; }
+      else if (ms) ms.textContent = '尚未設定職名章。';
     }
-    function genGongwen() {
+    function saveSealUI() {
+      var name = document.getElementById('seal-name').value.trim();
+      var file = document.getElementById('seal-file').value.trim();
+      if (!name || !file) { notify('請填寫名稱與 Drive 連結', false); return; }
+      call('saveSeal', { id: document.getElementById('seal-id').value || '', name: name, fileId: file, order: document.getElementById('seal-order').value || '0' })
+        .then(function () { notify('已儲存印信'); resetSealForm(); loadSeals(); });
+    }
+    function editSeal(s) {
+      document.getElementById('seal-id').value = s.id || '';
+      document.getElementById('seal-name').value = s.name || '';
+      document.getElementById('seal-file').value = s.fileId || '';
+      document.getElementById('seal-order').value = s.order || '0';
+    }
+    function resetSealForm() {
+      document.getElementById('seal-id').value = ''; document.getElementById('seal-name').value = '';
+      document.getElementById('seal-file').value = ''; document.getElementById('seal-order').value = '0';
+    }
+    function delSeal(id) { if (confirm('刪除此印信？')) call('deleteSeal', id).then(function () { loadSeals(); }); }
+    function saveMyJobSeal() {
+      var ref = document.getElementById('myseal-file').value.trim();
+      call('setMyJobSeal', ref).then(function (r) { if (MEPROF) MEPROF.jobSeal = r && r.jobSeal; notify('已儲存職名章'); loadSeals(); });
+    }
+
+    // ===== pdf-lib 公文產生器 =====
+    var GW_FONT_URL = 'https://cdn.jsdelivr.net/gh/lxgw/LxgwWenkaiTC@v1.520/fonts/TTF/LXGWWenKaiTC-Regular.ttf';
+    var __gwFont = null, __gwLibs = null;
+    function loadScriptOnce(src) {
+      return new Promise(function (res, rej) {
+        if (document.querySelector('script[data-src="' + src + '"]')) { res(); return; }
+        var s = document.createElement('script'); s.src = src; s.setAttribute('data-src', src);
+        s.onload = res; s.onerror = function () { rej(new Error('載入失敗：' + src)); };
+        document.head.appendChild(s);
+      });
+    }
+    function gwLibs() {
+      if (__gwLibs) return __gwLibs;
+      __gwLibs = loadScriptOnce('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js')
+        .then(function () { return loadScriptOnce('https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js'); });
+      return __gwLibs;
+    }
+    function gwFontBytes() {
+      if (__gwFont) return Promise.resolve(__gwFont);
+      return fetch(GW_FONT_URL).then(function (r) { if (!r.ok) throw new Error('字型下載失敗'); return r.arrayBuffer(); }).then(function (b) { __gwFont = b; return b; });
+    }
+    function dataUrlToBytes(d) { var b = atob(d.split(',')[1]); var u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+
+    async function genGongwen() {
       var v = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
       var type = v('gw-type');
       var anno = ['公告', '令'].indexOf(type) !== -1;
-      var seg = function (label, val) { return val ? '<div class="seg"><span class="seg-label"><b>' + esc(label) + '：</b></span><span class="seg-body">' + esc(val) + '</span></div>' : ''; };
-      var meta = function (label, val) { return val ? '<div>' + esc(label) + '：' + esc(val).replace(/\n/g, '<br>') + '</div>' : ''; };
-      var govSeal = document.getElementById('gw-seal').checked && v('gw-sealtext');
-      var top = (v('gw-file') || v('gw-keep')) ? '<div class="topbox">檔　號：' + esc(v('gw-file')) + '<br>保存年限：' + esc(v('gw-keep')) + '</div>' : '';
-      var orgHead = '<h1 class="org">國立臺灣大學社會科學院學生會　' + esc(type) + '</h1>';
+      try {
+        notify('產生中…首次需下載字型，請稍候');
+        await gwLibs();
+        var P = window.PDFLib;
+        var fontBytes = await gwFontBytes();
 
-      var html;
-      if (anno) {
-        var am = meta('發文日期', rocDate(v('gw-date'))) + meta('發文字號', v('gw-no')) + meta('附件', v('gw-attach'));
-        html = top + orgHead +
-          '<div class="anno-head"><div class="anno-meta">' + am + '</div>' + (govSeal ? '<div class="seal-box">' + sealGrid(v('gw-sealtext')) + '</div>' : '') + '</div>' +
-          seg('主旨', v('gw-subject')) + seg('依據', v('gw-basis')) + seg('公告事項', v('gw-notice')) +
-          (v('gw-signer') ? '<div class="anno-signer">' + esc(v('gw-signer')) + '</div>' : '');
-      } else {
-        var jobSeal = document.getElementById('gw-jobseal').checked && v('gw-signer');
-        var addr = (v('gw-addr') || v('gw-contact')) ? '<div class="addr">' + (v('gw-addr') ? '地址：' + esc(v('gw-addr')) + '<br>' : '') + (v('gw-contact') ? '聯絡方式：' + esc(v('gw-contact')) : '') + '</div>' : '';
-        var mg = meta('受文者', v('gw-to')) + meta('發文日期', rocDate(v('gw-date'))) + meta('發文字號', v('gw-no')) +
-          meta('速別', v('gw-speed')) + meta('密等及解密條件或保密期限', v('gw-secret')) + meta('附件', v('gw-attach'));
-        html = top + orgHead + addr +
-          '<div class="mgmt">' + mg + (govSeal ? sealGrid(v('gw-sealtext'), 'seal-abs') : '') + '</div>' +
-          '<hr class="sep">' + seg('主旨', v('gw-subject')) + seg('說明', v('gw-body')) +
-          '<div class="copies">' + (v('gw-orig') ? '<div><b>正本：</b>' + esc(v('gw-orig')) + '</div>' : '') + (v('gw-copy') ? '<div><b>副本：</b>' + esc(v('gw-copy')) + '</div>' : '') + '</div>' +
-          ((v('gw-signer') || jobSeal) ? '<div class="signer"><span class="signer-name">' + esc(v('gw-signer')) + '</span>' + (jobSeal ? '<span class="job-seal">' + esc(v('gw-signer')) + '</span>' : '') + '</div>' : '');
+        // 先取得印信圖片（base64）
+        var govSealId = document.getElementById('gw-seal').checked ? v('gw-seal-id') : '';
+        var govSealRef = govSealId ? (((__seals.find(function (s) { return s.id === govSealId; })) || {}).fileId || '') : '';
+        var jobSealRef = (!anno && document.getElementById('gw-jobseal').checked && MEPROF && MEPROF.jobSeal) ? MEPROF.jobSeal : '';
+        var govSealImg = govSealRef ? await call('getSeal', govSealRef).catch(function () { notify('機關印信讀取失敗，將略過', false); return null; }) : null;
+        var jobSealImg = jobSealRef ? await call('getSeal', jobSealRef).catch(function () { notify('職名章讀取失敗，將略過', false); return null; }) : null;
+
+        var doc = await P.PDFDocument.create();
+        doc.registerFontkit(window.fontkit);
+        var font = await doc.embedFont(fontBytes, { subset: true });
+        var black = P.rgb(0, 0, 0);
+
+        var PW = 595.28, PH = 841.89, M = 56.7, LEFT = M, RIGHT = PW - M, CW = RIGHT - LEFT;
+        var page = doc.addPage([PW, PH]);
+        var y = PH - M;
+        function newPage() { page = doc.addPage([PW, PH]); y = PH - M; }
+        function ensure(h) { if (y - h < M) newPage(); }
+        function tw(t, sz) { return font.widthOfTextAtSize(t, sz); }
+        function text(t, x, sz, color) { page.drawText(t, { x: x, y: y - sz, size: sz, font: font, color: color || black }); }
+        function wrap(s, sz, maxw) {
+          var out = [];
+          String(s == null ? '' : s).split('\n').forEach(function (para) {
+            if (para === '') { out.push(''); return; }
+            var line = '';
+            for (var i = 0; i < para.length; i++) {
+              var ch = para[i];
+              if (line && tw(line + ch, sz) > maxw) { out.push(line); line = ch; } else line += ch;
+            }
+            out.push(line);
+          });
+          return out;
+        }
+        // 一般段落（自動換行 + 換頁）
+        function block(s, x, sz, maxw, gap) {
+          wrap(s, sz, maxw).forEach(function (ln) { ensure(sz * 1.7); text(ln, x, sz); y -= sz * 1.8; });
+          if (gap) y -= gap;
+        }
+        // 懸掛縮排段落（主旨：／說明：…）
+        function seg(label, val, sz) {
+          if (!val) return;
+          var lab = label + '：';
+          var labW = tw(lab, sz), bx = LEFT + labW;
+          var lines = wrap(val, sz, CW - labW);
+          ensure(sz * 1.7);
+          text(lab, LEFT, sz); text(lines[0] || '', bx, sz); y -= sz * 1.9;
+          for (var i = 1; i < lines.length; i++) { ensure(sz * 1.7); text(lines[i], bx, sz); y -= sz * 1.9; }
+          y -= sz * 0.5;
+        }
+        function metaLines(arr, sz) {
+          arr.forEach(function (kv) {
+            if (!kv[1]) return;
+            String(kv[1]).split('\n').forEach(function (ln, i) { ensure(sz * 1.6); text((i === 0 ? kv[0] + '：' : '') + ln, LEFT, sz); y -= sz * 1.7; });
+          });
+        }
+        function centerSpaced(t, sz) {
+          // 置中＋字距（公文標題）
+          var gap = sz * 0.35, total = 0, i;
+          for (i = 0; i < t.length; i++) total += tw(t[i], sz) + (i ? gap : 0);
+          var x = LEFT + (CW - total) / 2;
+          ensure(sz * 1.6);
+          for (i = 0; i < t.length; i++) { page.drawText(t[i], { x: x, y: y - sz, size: sz, font: font, color: black }); x += tw(t[i], sz) + gap; }
+          y -= sz * 1.7;
+        }
+        // 檔號 / 保存年限（右上角）
+        if (v('gw-file') || v('gw-keep')) {
+          var ts = 9;
+          page.drawText('檔　號：' + v('gw-file'), { x: RIGHT - 150, y: PH - M - ts, size: ts, font: font, color: black });
+          page.drawText('保存年限：' + v('gw-keep'), { x: RIGHT - 150, y: PH - M - ts * 2.2, size: ts, font: font, color: black });
+        }
+        y = PH - M - 8;
+
+        // 機關名稱 + 文別（置中大字）
+        centerSpaced('國立臺灣大學社會科學院學生會', 18);
+        y -= 2; centerSpaced(type, 22); y -= 10;
+
+        // 印信圖片內嵌工具
+        async function embed(sealObj) {
+          if (!sealObj) return null;
+          var bytes = dataUrlToBytes(sealObj.dataUrl);
+          return (sealObj.mime && sealObj.mime.indexOf('png') !== -1) ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+        }
+        var govImg = await embed(govSealImg), jobImg = await embed(jobSealImg);
+
+        if (anno) {
+          // 公告：左側發文資訊，右側機關印信
+          var metaTopY = y;
+          metaLines([['發文日期', rocDate(v('gw-date'))], ['發文字號', v('gw-no')], ['附件', v('gw-attach')]], 12);
+          if (govImg) {
+            var gh = 120, gs = govImg.scale(gh / govImg.height);
+            page.drawImage(govImg, { x: RIGHT - gs.width, y: metaTopY - gh, width: gs.width, height: gs.height });
+            if (metaTopY - gh - 6 < y) y = metaTopY - gh - 6;
+          }
+          y -= 12;
+          seg('主旨', v('gw-subject'), 14);
+          seg('依據', v('gw-basis'), 14);
+          seg('公告事項', v('gw-notice'), 14);
+          if (v('gw-signer')) { y -= 18; centerSpaced(v('gw-signer'), 16); }
+        } else {
+          // 函：地址（右上）
+          if (v('gw-addr') || v('gw-contact')) {
+            var as = 10;
+            if (v('gw-addr')) { ensure(as * 1.6); var a1 = '地址：' + v('gw-addr'); page.drawText(a1, { x: RIGHT - tw(a1, as), y: y - as, size: as, font: font, color: black }); y -= as * 1.7; }
+            if (v('gw-contact')) { ensure(as * 1.6); var a2 = '聯絡方式：' + v('gw-contact'); page.drawText(a2, { x: RIGHT - tw(a2, as), y: y - as, size: as, font: font, color: black }); y -= as * 1.7; }
+            y -= 6;
+          }
+          var mTopY = y;
+          metaLines([['受文者', v('gw-to')], ['發文日期', rocDate(v('gw-date'))], ['發文字號', v('gw-no')],
+            ['速別', v('gw-speed')], ['密等及解密條件或保密期限', v('gw-secret')], ['附件', v('gw-attach')]], 12);
+          if (govImg) {
+            var fh = 110, fs = govImg.scale(fh / govImg.height);
+            page.drawImage(govImg, { x: RIGHT - fs.width, y: mTopY - fh, width: fs.width, height: fs.height });
+            if (mTopY - fh - 6 < y) y = mTopY - fh - 6;
+          }
+          y -= 6;
+          // 分隔線
+          ensure(12); page.drawLine({ start: { x: LEFT, y: y }, end: { x: RIGHT, y: y }, thickness: 1, color: black }); y -= 14;
+          seg('主旨', v('gw-subject'), 14);
+          seg('說明', v('gw-body'), 14);
+          if (v('gw-orig')) block('正本：' + v('gw-orig'), LEFT, 12, CW, 2);
+          if (v('gw-copy')) block('副本：' + v('gw-copy'), LEFT, 12, CW, 2);
+          // 署名（置中）＋ 職名章
+          if (v('gw-signer') || jobImg) {
+            y -= 28; var sy = y;
+            var sigSize = 18, sigW = 0, gap2 = sigSize * 0.4, i2;
+            var sig = v('gw-signer');
+            for (i2 = 0; i2 < sig.length; i2++) sigW += tw(sig[i2], sigSize) + (i2 ? gap2 : 0);
+            var sx = LEFT + (CW - sigW) / 2;
+            ensure(sigSize * 1.6);
+            for (i2 = 0; i2 < sig.length; i2++) { page.drawText(sig[i2], { x: sx, y: sy - sigSize, size: sigSize, font: font, color: black }); sx += tw(sig[i2], sigSize) + gap2; }
+            if (jobImg) { var jh = 64, js = jobImg.scale(jh / jobImg.height); page.drawImage(jobImg, { x: sx + 8, y: sy - sigSize - (jh - sigSize) / 2 - 4, width: js.width, height: js.height }); }
+            y -= sigSize * 1.7;
+          }
+        }
+
+        var bytes = await doc.save();
+        var blob = new Blob([bytes], { type: 'application/pdf' });
+        var fname = (type + '_' + (v('gw-no') || v('gw-date') || '')).replace(/[\\/:*?"<>|\s]+/g, '_') || '公文';
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname + '.pdf';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+        notify('PDF 已下載');
+      } catch (e) {
+        notify('產生失敗：' + (e && e.message ? e.message : e), false);
       }
-
-      var brush = '"Ma Shan Zheng","LXGW WenKai TC",cursive';
-      var css = 'body{font-size:16px;line-height:2;position:relative;} b{font-weight:bold;} ' +
-        '.topbox{position:absolute;top:0;right:0;font-size:13px;line-height:1.6;} ' +
-        '.org{text-align:center;font-size:26px;font-weight:bold;letter-spacing:10px;margin:4px 0 16px;} ' +
-        '.addr{text-align:right;font-size:14px;line-height:1.7;margin-bottom:8px;} ' +
-        '.sep{border:0;border-top:1.5px solid #000;margin:10px 0;} ' +
-        '.mgmt{position:relative;margin:6px 0;min-height:120px;} ' +
-        '.anno-head{display:flex;justify-content:space-between;align-items:center;min-height:200px;margin:10px 0;} .anno-meta{font-size:16px;} ' +
-        '.seal-box{display:flex;align-items:center;justify-content:center;margin-right:36px;} ' +
-        '.anno-signer{margin-top:44px;font-size:30px;letter-spacing:8px;color:#12409a;font-family:' + brush + ';} ' +
-        '.seg{display:flex;margin:12px 0;font-size:16px;} .seg-label{flex:0 0 auto;} .seg-body{flex:1;white-space:pre-wrap;} ' +
-        '.copies{margin-top:24px;} .signer{text-align:center;margin-top:50px;} ' +
-        '.signer-name{font-size:30px;letter-spacing:8px;color:#12409a;font-family:' + brush + ';vertical-align:middle;} ' +
-        '.seal-mark{width:110px;height:110px;box-sizing:border-box;display:grid;grid-auto-flow:column;direction:rtl;border:3px solid #c1121f;box-shadow:inset 0 0 0 1.5px #c1121f;color:#c1121f;font-weight:bold;font-family:"LiSu","DFLiShu-XB","STLiti","隸書","LXGW WenKai TC","BiauKai",serif;} ' +
-        '.seal-mark .sc{display:flex;align-items:center;justify-content:center;line-height:1;} ' +
-        '.seal-abs{position:absolute;right:40px;top:50%;transform:translateY(-50%);} ' +
-        '.job-seal{display:inline-flex;border:2px solid #12409a;color:#12409a;border-radius:3px;writing-mode:vertical-rl;text-orientation:upright;height:104px;padding:8px 8px;font-size:22px;letter-spacing:3px;line-height:1.3;margin-left:26px;vertical-align:middle;align-items:center;font-family:' + brush + ';}';
-      printDoc('公文', html, css);
     }
     function autoGwNo() {
       call('nextGongwenNo').then(function (r) {
@@ -1416,6 +1603,7 @@
     function loadGongwen() {
       var gd = document.getElementById('gw-date'); if (!gd.value) gd.value = new Date().toISOString().slice(0, 10);
       gwToggle();
+      loadSeals();
       var s = document.getElementById('gw-signer');
       if (!s.value) {
         call('getSettingsAll').then(function (rows) {
