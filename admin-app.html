@@ -62,7 +62,7 @@
   </div>
 
   <div id="app" class="d-none flex-grow-1 d-flex flex-column">
-  <nav class="navbar" style="background-color:#1d3557" data-bs-theme="dark">
+  <nav class="navbar sticky-top" style="background-color:#1d3557;z-index:1030" data-bs-theme="dark">
     <div class="container-fluid">
       <button class="btn btn-link text-white text-decoration-none p-1 me-1" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-label="開啟選單"><i class="bi bi-list" style="font-size:1.6rem"></i></button>
       <span class="navbar-brand mb-0 h5">社科院學生會後台</span>
@@ -141,26 +141,26 @@
   <div class="tab-content">
     <!-- 公告 -->
     <div class="tab-pane fade" id="t-announce">
-      <h5>新增 / 編輯公告</h5>
+      <h5><i class="bi bi-megaphone me-1"></i>新增 / 編輯公告</h5>
       <input type="hidden" id="an-id" />
       <div class="row g-2">
-        <div class="col-md-6"><input id="an-title" class="form-control" placeholder="標題" /></div>
-        <div class="col-md-3"><input id="an-date" type="date" class="form-control" /></div>
-        <div class="col-md-3 form-check d-flex align-items-center ps-4">
+        <div class="col-md-6"><label class="form-label mb-0 small">標題</label><input id="an-title" class="form-control" placeholder="標題" /></div>
+        <div class="col-md-3"><label class="form-label mb-0 small">日期</label><input id="an-date" type="date" class="form-control" /></div>
+        <div class="col-md-3 form-check d-flex align-items-center ps-4 mt-4">
           <input id="an-pinned" type="checkbox" class="form-check-input me-2" /><label class="form-check-label">置頂</label>
         </div>
-        <div class="col-6 col-md-3"><input id="an-atitle" class="form-control" placeholder="發佈人職稱" /></div>
-        <div class="col-6 col-md-3"><input id="an-aname" class="form-control" placeholder="發佈人姓名" /></div>
-        <div class="col-12"><textarea id="an-body" class="form-control" rows="3" placeholder="內容（支援 Markdown）"></textarea></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">發佈人職稱</label><input id="an-atitle" class="form-control" placeholder="例：主任委員" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">發佈人姓名</label><input id="an-aname" class="form-control" placeholder="例：王小明" /></div>
+        <div class="col-12"><label class="form-label mb-0 small">內容（支援 Markdown）</label><textarea id="an-body" class="form-control" rows="3" placeholder="內容（支援 Markdown）"></textarea></div>
       </div>
-      <button class="btn btn-primary mt-2" onclick="saveAnnounce()">儲存</button>
+      <button class="btn btn-primary mt-2" onclick="saveAnnounce()"><i class="bi bi-save me-1"></i>儲存</button>
       <button class="btn btn-outline-secondary mt-2" onclick="resetAnnounce()">清空</button>
       <hr /><div id="an-list"></div>
     </div>
 
     <!-- 首頁（橫幅設定） -->
     <div class="tab-pane fade show active" id="t-home">
-      <h5>首頁橫幅</h5>
+      <h5><i class="bi bi-image me-1"></i>首頁橫幅</h5>
       <div class="row g-2 mb-2" style="max-width:760px">
         <div class="col-12"><label class="form-label mb-0 small">標題後方圖片網址</label><input id="hero-image" class="form-control form-control-sm" placeholder="https://...（留空則不顯示圖片）" /></div>
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">高度(px)</label><input id="hero-height" type="number" class="form-control form-control-sm" /></div>
@@ -171,24 +171,24 @@
 
     <!-- 活動（首頁輪播 + 報名） -->
     <div class="tab-pane fade" id="t-events">
-      <h5>活動資訊（首頁輪播）</h5>
+      <h5><i class="bi bi-calendar-event me-1"></i>活動資訊（首頁輪播）</h5>
       <input type="hidden" id="ev-id" />
       <div class="row g-2" style="max-width:820px">
-        <div class="col-12 col-md-6"><input id="ev-title" class="form-control form-control-sm" placeholder="標題" /></div>
-        <div class="col-6 col-md-3"><input id="ev-date" type="date" class="form-control form-control-sm" /></div>
-        <div class="col-6 col-md-3"><div class="input-group input-group-sm"><span class="input-group-text">排序</span><input id="ev-order" type="number" class="form-control" value="0" /></div></div>
-        <div class="col-12"><input id="ev-image" class="form-control form-control-sm" placeholder="圖片網址（建議 1:1 正方形，1200×1200）" /></div>
-        <div class="col-6 col-md-3"><input id="ev-atitle" class="form-control form-control-sm" placeholder="發佈人職稱" /></div>
-        <div class="col-6 col-md-3"><input id="ev-aname" class="form-control form-control-sm" placeholder="發佈人姓名" /></div>
-        <div class="col-12"><input id="ev-summary" class="form-control form-control-sm" placeholder="卡片摘要（選填）" /></div>
-        <div class="col-12"><textarea id="ev-body" class="form-control form-control-sm" rows="4" placeholder="詳細內容（支援 Markdown）"></textarea></div>
+        <div class="col-12 col-md-6"><label class="form-label mb-0 small">標題</label><input id="ev-title" class="form-control form-control-sm" placeholder="標題" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">日期</label><input id="ev-date" type="date" class="form-control form-control-sm" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">排序</label><input id="ev-order" type="number" class="form-control form-control-sm" value="0" /></div>
+        <div class="col-12"><label class="form-label mb-0 small">圖片網址</label><input id="ev-image" class="form-control form-control-sm" placeholder="建議 1:1 正方形，1200×1200" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">發佈人職稱</label><input id="ev-atitle" class="form-control form-control-sm" placeholder="例：主任委員" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">發佈人姓名</label><input id="ev-aname" class="form-control form-control-sm" placeholder="例：王小明" /></div>
+        <div class="col-12"><label class="form-label mb-0 small">卡片摘要（選填）</label><input id="ev-summary" class="form-control form-control-sm" placeholder="顯示在首頁卡片上的簡短說明" /></div>
+        <div class="col-12"><label class="form-label mb-0 small">詳細內容（支援 Markdown）</label><textarea id="ev-body" class="form-control form-control-sm" rows="4" placeholder="詳細內容（支援 Markdown）"></textarea></div>
         <div class="col-12 d-flex flex-wrap gap-3 ms-2">
           <div class="form-check"><input id="ev-published" type="checkbox" class="form-check-input" checked /><label class="form-check-label small">發布（顯示於首頁）</label></div>
           <div class="form-check"><input id="ev-signup" type="checkbox" class="form-check-input" /><label class="form-check-label small">開放報名</label></div>
           <div class="form-check"><input id="ev-signuproster" type="checkbox" class="form-check-input" /><label class="form-check-label small">報名須檢核學生名單</label></div>
         </div>
       </div>
-      <button class="btn btn-primary mt-2" onclick="saveEv()">儲存活動</button>
+      <button class="btn btn-primary mt-2" onclick="saveEv()"><i class="bi bi-save me-1"></i>儲存活動</button>
       <button class="btn btn-outline-secondary mt-2" onclick="resetEv()">清空</button>
       <hr /><div id="ev-list"></div>
       <div id="ev-regs" class="mt-3"></div>
@@ -196,14 +196,14 @@
 
     <!-- 行事曆 -->
     <div class="tab-pane fade" id="t-calendar">
-      <h5>新增 / 編輯行事曆內嵌</h5>
+      <h5><i class="bi bi-calendar3 me-1"></i>新增 / 編輯行事曆內嵌</h5>
       <p class="text-muted small">填入 Google 行事曆的「嵌入網址」（行事曆設定 → 整合代碼 → iframe src）。</p>
       <input type="hidden" id="cal-id" />
       <div class="row g-2">
-        <div class="col-md-4"><input id="cal-title" class="form-control" placeholder="標題（例：社窩公用行事曆）" /></div>
-        <div class="col-md-8"><input id="cal-url" class="form-control" placeholder="https://calendar.google.com/calendar/embed?src=..." /></div>
+        <div class="col-md-4"><label class="form-label mb-0 small">標題</label><input id="cal-title" class="form-control" placeholder="例：社窩公用行事曆" /></div>
+        <div class="col-md-8"><label class="form-label mb-0 small">嵌入網址</label><input id="cal-url" class="form-control" placeholder="https://calendar.google.com/calendar/embed?src=..." /></div>
       </div>
-      <button class="btn btn-primary mt-2" onclick="saveCal()">儲存</button>
+      <button class="btn btn-primary mt-2" onclick="saveCal()"><i class="bi bi-save me-1"></i>儲存</button>
       <button class="btn btn-outline-secondary mt-2" onclick="resetCal()">清空</button>
       <hr /><div id="cal-list"></div>
     </div>
@@ -258,7 +258,7 @@
 
     <!-- 學生名單 -->
     <div class="tab-pane fade" id="t-roster">
-      <h5>學生名單</h5>
+      <h5><i class="bi bi-people me-1"></i>學生名單</h5>
       <p class="text-muted small mb-1">學生名單放在另一個 Google Sheet（第一個工作表 A 欄為學號，不分大小寫）。此處貼上連結即可，系統檢核時即時讀取。請將該試算表共用給 ntusssa2 帳號（或設為「知道連結的任何人可檢視」）。</p>
       <div class="input-group mb-3" style="max-width:680px">
         <span class="input-group-text">學生名單 Sheet 連結</span>
@@ -323,7 +323,7 @@
 
     <!-- 陳情 -->
     <div class="tab-pane fade" id="t-petition">
-      <h5>學生陳情 / 意見</h5>
+      <h5><i class="bi bi-chat-left-text me-1"></i>學生陳情 / 意見</h5>
       <div class="mb-2">
         <select id="pet-filter" class="form-select form-select-sm d-inline-block w-auto" onchange="loadPetitions()">
           <option value="">全部</option><option value="new">未處理</option><option value="handled">已處理</option>
@@ -334,14 +334,14 @@
 
     <!-- 信件範本 -->
     <div class="tab-pane fade" id="t-email">
-      <h5>寄信範本</h5>
+      <h5><i class="bi bi-envelope me-1"></i>寄信範本</h5>
       <p class="text-muted small">可用變數：<code>{name}</code> 借用人、<code>{venue}</code> 場地、<code>{time}</code> 時間、<code>{reason}</code> 原因（依信件類型而定）。</p>
       <div id="email-list"></div>
     </div>
 
     <!-- 公文產生器 -->
     <div class="tab-pane fade" id="t-gongwen">
-      <h5>正式公文產生器</h5>
+      <h5><i class="bi bi-file-earmark-text me-1"></i>正式公文產生器</h5>
       <p class="text-muted small">填寫後按「產生 PDF」，於列印視窗選擇「另存為 PDF」即可。</p>
       <div class="row g-2" style="max-width:880px">
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">文別</label>
@@ -371,7 +371,7 @@
         </div>
       </div>
       <p class="text-muted small mt-2 mb-0">公告：主旨／依據／公告事項三段，機關印信置右側、首長職銜姓名於下方；函：含受文者、說明、正本副本等。標楷體＋隸書印信需系統已安裝對應字型。</p>
-      <button class="btn btn-primary mt-2" onclick="genGongwen()">產生 PDF（列印）</button>
+      <button class="btn btn-primary mt-2" onclick="genGongwen()"><i class="bi bi-printer me-1"></i>產生 PDF（列印）</button>
     </div>
 
     <!-- 頁面說明 -->
@@ -433,9 +433,9 @@
       <div id="adm-owner-only">
         <p class="text-muted small mb-2">新增 / 編輯管理員（僅擁有者可調整）。Email 為識別鍵；同 Email 再送出即為編輯。</p>
         <div class="row g-2 mb-2" style="max-width:760px">
-          <div class="col-12 col-md-5"><input id="adm-email" class="form-control form-control-sm" placeholder="Google Email" /></div>
-          <div class="col-6 col-md-4"><input id="adm-name" class="form-control form-control-sm" placeholder="姓名" /></div>
-          <div class="col-6 col-md-3"><input id="adm-title" class="form-control form-control-sm" placeholder="職稱" /></div>
+          <div class="col-12 col-md-5"><label class="form-label mb-0 small">Google Email</label><input id="adm-email" class="form-control form-control-sm" placeholder="name@gmail.com" /></div>
+          <div class="col-6 col-md-4"><label class="form-label mb-0 small">姓名</label><input id="adm-name" class="form-control form-control-sm" placeholder="例：王小明" /></div>
+          <div class="col-6 col-md-3"><label class="form-label mb-0 small">職稱</label><input id="adm-title" class="form-control form-control-sm" placeholder="例：副秘書長" /></div>
         </div>
         <div class="mb-1">
           <div class="form-check"><input id="adm-all" type="checkbox" class="form-check-input" onchange="document.getElementById('adm-perms').classList.toggle('d-none', this.checked)" /><label class="form-check-label small fw-bold" for="adm-all">完整權限（全部頁面）</label></div>
@@ -450,7 +450,7 @@
 
     <!-- 操作紀錄 -->
     <div class="tab-pane fade" id="t-audit">
-      <h5>操作紀錄（稽核）</h5>
+      <h5><i class="bi bi-clipboard-data me-1"></i>操作紀錄（稽核）</h5>
       <p class="text-muted small">記錄所有後台異動操作的審核者、時間與內容（最近 300 筆）。</p>
       <button class="btn btn-sm btn-outline-secondary mb-2" onclick="loadAudit()">重新整理</button>
       <div id="audit-list"></div>
@@ -765,7 +765,7 @@
       var zs = window.__zones || [];
       document.getElementById('zone-editor').innerHTML = zs.map(function (z, i) {
         return '<div class="row g-2 align-items-center mb-2 zone-row">' +
-          '<div class="col-12 col-md-4"><input class="form-control form-control-sm z-name" placeholder="區域名稱" value="' + esc(z.name || '') + '"></div>' +
+          '<div class="col-12 col-md-4"><div class="input-group input-group-sm"><span class="input-group-text">區域</span><input class="form-control z-name" placeholder="區域名稱" value="' + esc(z.name || '') + '"></div></div>' +
           '<div class="col-4 col-md-2"><div class="input-group input-group-sm"><span class="input-group-text">起</span><input type="number" class="form-control z-from" value="' + z.from + '"></div></div>' +
           '<div class="col-4 col-md-2"><div class="input-group input-group-sm"><span class="input-group-text">迄</span><input type="number" class="form-control z-to" value="' + z.to + '"></div></div>' +
           '<div class="col-3 col-md-2"><div class="form-check"><input class="form-check-input z-open" type="checkbox" ' + (z.open === false ? '' : 'checked') + ' id="zopen' + i + '"><label class="form-check-label small" for="zopen' + i + '">開放借用</label></div></div>' +
@@ -800,9 +800,9 @@
         (borrowed && l.completed !== 'true' ? '<button class="btn btn-sm btn-warning" onclick="completeLk(' + num + ')">完成借用（領鑰匙+押金，派發收據）</button>' : '') +
         (borrowed ? '<button class="btn btn-sm btn-success" onclick="returnLk(' + num + ')">歸還（退押金+收鑰匙）</button>' : '') +
         (borrowed ? '<button class="btn btn-sm btn-outline-danger" onclick="clearLk(' + num + ')">清除借用</button>' : '') + '</div>' +
-        '<hr><div class="row g-2"><div class="col"><input id="ed-name" class="form-control form-control-sm" placeholder="借用人" value="' + esc(l.borrowerName) + '"></div>' +
-        '<div class="col"><input id="ed-dept" class="form-control form-control-sm" placeholder="系級" value="' + esc(l.dept) + '"></div>' +
-        '<div class="col"><input id="ed-sid" class="form-control form-control-sm" placeholder="學號" value="' + esc(l.studentId) + '"></div>' +
+        '<hr><div class="row g-2"><div class="col"><div class="input-group input-group-sm"><span class="input-group-text">借用人</span><input id="ed-name" class="form-control" value="' + esc(l.borrowerName) + '"></div></div>' +
+        '<div class="col"><div class="input-group input-group-sm"><span class="input-group-text">系級</span><input id="ed-dept" class="form-control" value="' + esc(l.dept) + '"></div></div>' +
+        '<div class="col"><div class="input-group input-group-sm"><span class="input-group-text">學號</span><input id="ed-sid" class="form-control" value="' + esc(l.studentId) + '"></div></div>' +
         '<div class="col-auto"><button class="btn btn-sm btn-primary" onclick="manualBorrow(' + num + ')">手動設定為借出</button></div></div>' +
         '<small class="text-muted">手動設定可不受「一人一櫃」限制。</small>';
       document.getElementById('locker-modal-title').textContent = '櫃位 ' + num;
@@ -1030,7 +1030,9 @@
         document.getElementById('email-list').innerHTML = rows.map(function (r) {
           return '<div class="card mb-3"><div class="card-body">' +
             '<h6>' + esc(r.label) + ' <small class="text-muted">(' + r.key + ')</small></h6>' +
+            '<label class="form-label mb-0 small">主旨</label>' +
             '<input class="form-control mb-2" id="em-sub-' + r.key + '" value="' + esc(r.subject) + '" placeholder="主旨">' +
+            '<label class="form-label mb-0 small">內文</label>' +
             '<textarea class="form-control mb-2" id="em-body-' + r.key + '" rows="5">' + esc(r.body) + '</textarea>' +
             '<button class="btn btn-sm btn-primary" onclick="saveEmail(\'' + r.key + '\')">儲存</button>' +
           '</div></div>';
