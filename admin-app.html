@@ -33,6 +33,9 @@
     .grid-line{display:flex;}
     /* ---- 後台首頁（總覽） ---- */
     .dash-hero{background:linear-gradient(120deg,#1d3557 0%,#2a4a73 60%,#457b9d 100%);color:#fff;border-radius:16px;padding:1.6rem 1.8rem;box-shadow:0 6px 20px rgba(29,53,87,.25);}
+    .dash-notice{border-left:6px solid #e9a000;background:#fff8e6;border-radius:12px;padding:1rem 1.2rem;margin-bottom:1.25rem;box-shadow:0 3px 12px rgba(233,160,0,.18);}
+    .dash-notice .dn-title{font-weight:700;color:#8a6100;}
+    .dash-notice .dn-body{white-space:pre-wrap;color:#4d3a00;margin-top:.25rem;}
     .dash-hero h3{margin:0;font-weight:700;}
     .dash-hero .dash-date{opacity:.85;font-size:.95rem;margin-top:.35rem;}
     .dash-stat{border:0;border-radius:14px;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.08);cursor:pointer;transition:transform .12s,box-shadow .12s;}
@@ -160,6 +163,7 @@
   <div class="tab-content">
     <!-- 後台首頁（總覽） -->
     <div class="tab-pane fade show active" id="t-dashboard">
+      <div id="dash-notice"></div>
       <div id="dash-hero" class="dash-hero mb-4"></div>
       <div id="dash-stats" class="row g-3 mb-4"></div>
       <div id="dash-cards" class="row g-3"></div>
@@ -510,6 +514,17 @@
       <button class="btn btn-primary btn-sm" onclick="saveSetting('privacy_content', document.getElementById('set-privacy').value)">儲存隱私權條款</button>
 
       <div id="admin-mgmt" class="d-none">
+      <hr />
+      <h5><i class="bi bi-megaphone-fill me-1"></i>系統公告（顯示給所有幹部）</h5>
+      <p class="text-muted small mb-1">會醒目顯示在登入後的「後台首頁」，幹部可自行關閉；每次更新內容後會重新對所有人顯示。</p>
+      <div class="row g-2 mb-2" style="max-width:820px">
+        <div class="col-12"><textarea id="sysnotice-content" class="form-control" rows="3" placeholder="例：本週五晚上 7 點召開幹部會議，請準時出席。"></textarea></div>
+        <div class="col-12">
+          <div class="form-check"><input id="sysnotice-active" type="checkbox" class="form-check-input" /><label class="form-check-label small" for="sysnotice-active">啟用顯示</label></div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm mb-2" onclick="saveSysNotice()"><i class="bi bi-save me-1"></i>儲存系統公告</button>
+
       <hr />
       <h5>管理員名單與權限</h5>
       <div id="adm-owner-only">
@@ -993,6 +1008,10 @@
         document.getElementById('wl-toggle').checked = String(m.v207_use_whitelist) === 'true';
         if (document.getElementById('lk-roster')) document.getElementById('lk-roster').checked = String(m.locker_use_roster) === 'true';
         if (document.getElementById('set-privacy')) document.getElementById('set-privacy').value = m.privacy_content || '';
+        if (document.getElementById('sysnotice-content')) {
+          document.getElementById('sysnotice-content').value = m.sysnotice_content || '';
+          document.getElementById('sysnotice-active').checked = String(m.sysnotice_active) === 'true';
+        }
         if (document.getElementById('gw-word')) {
           document.getElementById('gw-word').value = m.gw_doc_word || '社科院學生會';
           document.getElementById('gw-cat').value = m.gw_file_cat || '1';
@@ -1076,6 +1095,31 @@
           '</div></div>';
       }).join('');
       loadDashStats();
+      loadDashNotice();
+    }
+    function loadDashNotice() {
+      var box = document.getElementById('dash-notice'); if (!box) return;
+      box.innerHTML = '';
+      call('getSysNotice').then(function (n) {
+        if (!n || !n.active || !n.content) return;
+        var dismissed = ''; try { dismissed = localStorage.getItem('coss_sysnotice_dismissed') || ''; } catch (e) {}
+        if (dismissed && dismissed === (n.updatedAt || '')) return;
+        var el = document.createElement('div');
+        el.className = 'dash-notice position-relative';
+        el.innerHTML = '<button type="button" class="btn-close position-absolute" style="top:.8rem;right:.9rem" aria-label="關閉"></button>' +
+          '<div class="dn-title"><i class="bi bi-megaphone-fill me-1"></i>系統公告</div>' +
+          '<div class="dn-body">' + esc(n.content) + '</div>';
+        el.querySelector('.btn-close').addEventListener('click', function () {
+          try { localStorage.setItem('coss_sysnotice_dismissed', n.updatedAt || ''); } catch (e) {}
+          box.innerHTML = '';
+        });
+        box.appendChild(el);
+      }).catch(function () {});
+    }
+    function saveSysNotice() {
+      var content = document.getElementById('sysnotice-content').value;
+      var active = document.getElementById('sysnotice-active').checked;
+      call('saveSysNotice', content, active).then(function () { notify('已儲存系統公告'); });
     }
     function dashStatTile(num, label, color, tab, icon) {
       return '<div class="col-6 col-md-4"><div class="dash-stat p-3 d-flex align-items-center justify-content-between" style="background:' + color + '" onclick="goTab(\'' + tab + '\')">' +
