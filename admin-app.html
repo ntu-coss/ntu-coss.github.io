@@ -28,6 +28,20 @@
     .grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;}
     .grid-inner{width:max-content;}
     .grid-line{display:flex;}
+    /* ---- 後台首頁（總覽） ---- */
+    .dash-hero{background:linear-gradient(120deg,#1d3557 0%,#2a4a73 60%,#457b9d 100%);color:#fff;border-radius:16px;padding:1.6rem 1.8rem;box-shadow:0 6px 20px rgba(29,53,87,.25);}
+    .dash-hero h3{margin:0;font-weight:700;}
+    .dash-hero .dash-date{opacity:.85;font-size:.95rem;margin-top:.35rem;}
+    .dash-stat{border:0;border-radius:14px;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.08);cursor:pointer;transition:transform .12s,box-shadow .12s;}
+    .dash-stat:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.16);}
+    .dash-stat .num{font-size:2rem;font-weight:700;line-height:1;}
+    .dash-stat .lbl{font-size:.9rem;opacity:.95;}
+    .dash-stat .bi{font-size:1.6rem;opacity:.85;}
+    .dash-card{border:1px solid #e6e9ef;border-radius:14px;background:#fff;cursor:pointer;height:100%;transition:transform .12s,box-shadow .12s,border-color .12s;}
+    .dash-card:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(29,53,87,.14);border-color:#457b9d;}
+    .dash-card .icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;flex:none;}
+    .dash-card .ttl{font-weight:600;color:#1d3557;line-height:1.2;}
+    .dash-card .desc{font-size:.82rem;color:#6c757d;}
   </style>
 </head>
 <body>
@@ -80,6 +94,7 @@
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="關閉"></button>
     </div>
     <div class="offcanvas-body p-0 d-flex flex-column">
+      <button class="list-group-item list-group-item-action fw-semibold border-bottom" data-tab="#t-dashboard"><i class="bi bi-grid-1x2 me-2"></i>後台首頁</button>
       <div class="accordion accordion-flush flex-grow-1" id="navacc">
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-act"><i class="bi bi-calendar-event me-2"></i>活動管理</button></h2>
@@ -139,6 +154,13 @@
   <main class="container-fluid py-3 flex-grow-1">
 
   <div class="tab-content">
+    <!-- 後台首頁（總覽） -->
+    <div class="tab-pane fade show active" id="t-dashboard">
+      <div id="dash-hero" class="dash-hero mb-4"></div>
+      <div id="dash-stats" class="row g-3 mb-4"></div>
+      <div id="dash-cards" class="row g-3"></div>
+    </div>
+
     <!-- 公告 -->
     <div class="tab-pane fade" id="t-announce">
       <h5><i class="bi bi-megaphone me-1"></i>新增 / 編輯公告</h5>
@@ -159,7 +181,7 @@
     </div>
 
     <!-- 首頁（橫幅設定） -->
-    <div class="tab-pane fade show active" id="t-home">
+    <div class="tab-pane fade" id="t-home">
       <h5><i class="bi bi-image me-1"></i>首頁橫幅</h5>
       <div class="row g-2 mb-2" style="max-width:760px">
         <div class="col-12"><label class="form-label mb-0 small">標題後方圖片網址</label><input id="hero-image" class="form-control form-control-sm" placeholder="https://...（留空則不顯示圖片）" /></div>
@@ -536,10 +558,8 @@
           document.getElementById('greet').textContent = g || MEPROF.email || '管理員';
           resetAnnounce(); resetEv();
           applyPagePerms(MEPROF.pages);
-          var homeBtn = document.querySelector('#sidebar [data-tab="#t-home"]');
-          if (homeBtn && !homeBtn.classList.contains('d-none')) goTab('#t-home');
-          else { var first = document.querySelector('#sidebar [data-tab]:not(.d-none)'); if (first) goTab(first.getAttribute('data-tab')); else loadHero(); }
-        }).catch(function () { loadHero(); });
+          goTab('#t-dashboard');
+        }).catch(function () { goTab('#t-dashboard'); });
       }).catch(function (e) {
         TOKEN = null; clearToken();
         showGate('登入失敗：' + (e && e.message ? e.message : e));
@@ -908,11 +928,66 @@
       var all = pages === 'all' || isOwner();
       document.querySelectorAll('#sidebar [data-tab]').forEach(function (b) {
         if (b.id === 'tab-audit-li') return; // 由 applyOwnerUI 控制
+        if (pageOf(b) === 'dashboard') return; // 後台首頁永遠顯示
         var ok = all || (Array.isArray(pages) && pages.indexOf(pageOf(b)) !== -1);
         b.classList.toggle('d-none', !ok);
       });
       document.querySelectorAll('#navacc .accordion-item').forEach(function (item) {
         item.classList.toggle('d-none', !item.querySelector('.list-group-item-action:not(.d-none)'));
+      });
+    }
+    function canPage(p) {
+      if (isOwner()) return true;
+      var pg = MEPROF && MEPROF.pages;
+      if (pg === 'all' || !pg) return true;
+      return Array.isArray(pg) && pg.indexOf(p) !== -1;
+    }
+    // ---------- 後台首頁（總覽） ----------
+    var DASH_CARDS = [
+      { tab: '#t-events', page: 'events', icon: 'bi-calendar-event', color: '#e76f51', title: '活動管理', desc: '首頁輪播、報名、簽到、發信' },
+      { tab: '#t-announce', page: 'announce', icon: 'bi-megaphone', color: '#2a9d8f', title: '公告', desc: '發佈與編輯公告' },
+      { tab: '#t-calendar', page: 'calendar', icon: 'bi-calendar3', color: '#457b9d', title: '行事曆', desc: '內嵌 Google 行事曆' },
+      { tab: '#t-petition', page: 'petition', icon: 'bi-chat-left-text', color: '#9c6644', title: '陳情處理', desc: '學生陳情與意見' },
+      { tab: '#t-venue', page: 'venue', icon: 'bi-hourglass-split', color: '#e9a000', title: '場地審核', desc: '3F／207 預約審核' },
+      { tab: '#t-vset', page: 'vset', icon: 'bi-sliders', color: '#6d6875', title: '場地設定', desc: '借用區間、封鎖、檢核' },
+      { tab: '#t-locker', page: 'locker', icon: 'bi-grid-3x3-gap', color: '#264653', title: '院櫃', desc: '櫃位借用與分區' },
+      { tab: '#t-projector', page: 'projector', icon: 'bi-projector', color: '#0a9396', title: '投影機', desc: '借用審核與領用歸還' },
+      { tab: '#t-home', page: 'home', icon: 'bi-image', color: '#ee9b00', title: '首頁橫幅', desc: '首頁標題背景設定' },
+      { tab: '#t-pagetext', page: 'pagetext', icon: 'bi-card-text', color: '#7209b7', title: '頁面說明', desc: '各表單說明文字' },
+      { tab: '#t-gongwen', page: 'gongwen', icon: 'bi-file-earmark-text', color: '#3a0ca3', title: '公文產生器', desc: '正式公文／簽到表 PDF' },
+      { tab: '#t-roster', page: 'roster', icon: 'bi-people', color: '#1d3557', title: '學生名單', desc: '名單查詢與來源設定' },
+      { tab: '#t-email', page: 'email', icon: 'bi-envelope', color: '#bc6c25', title: '信件範本', desc: '通知信主旨與內文' },
+      { tab: '#t-system', page: 'system', icon: 'bi-gear', color: '#495057', title: '系統設定', desc: '押金、文號、權限等' },
+    ];
+    function loadDashboard() {
+      var name = (MEPROF && ((MEPROF.title || '') + ' ' + (MEPROF.name || '')).trim()) || (MEPROF && MEPROF.email) || '管理員';
+      var ds = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+      document.getElementById('dash-hero').innerHTML =
+        '<h3>' + esc(name) + '，您好 👋</h3>' +
+        '<div class="dash-date"><i class="bi bi-calendar3 me-1"></i>' + esc(ds) + '　社科院學生會後台</div>';
+      document.getElementById('dash-cards').innerHTML = DASH_CARDS.filter(function (c) { return canPage(c.page); }).map(function (c) {
+        return '<div class="col-6 col-md-4 col-lg-3"><div class="dash-card p-3 d-flex gap-3 align-items-start" onclick="goTab(\'' + c.tab + '\')">' +
+          '<div class="icon" style="background:' + c.color + '"><i class="bi ' + c.icon + '"></i></div>' +
+          '<div><div class="ttl">' + c.title + '</div><div class="desc">' + c.desc + '</div></div>' +
+          '</div></div>';
+      }).join('');
+      loadDashStats();
+    }
+    function dashStatTile(num, label, color, tab, icon) {
+      return '<div class="col-6 col-md-4"><div class="dash-stat p-3 d-flex align-items-center justify-content-between" style="background:' + color + '" onclick="goTab(\'' + tab + '\')">' +
+        '<div><div class="num">' + num + '</div><div class="lbl">' + label + '</div></div><i class="bi ' + icon + '"></i></div></div>';
+    }
+    function loadDashStats() {
+      var el = document.getElementById('dash-stats');
+      var defs = [];
+      if (canPage('venue')) defs.push({ label: '待審核場地', color: '#e76f51', tab: '#t-venue', icon: 'bi-hourglass-split', get: function () { return call('listVenueBookings', { status: 'pending' }).then(function (r) { return (r || []).length; }); } });
+      if (canPage('projector')) defs.push({ label: '待審核投影機', color: '#0a9396', tab: '#t-projector', icon: 'bi-projector', get: function () { return call('listProjector').then(function (r) { return (r || []).filter(function (x) { return x.status === 'pending'; }).length; }); } });
+      if (canPage('petition')) defs.push({ label: '待處理陳情', color: '#9c6644', tab: '#t-petition', icon: 'bi-chat-left-text', get: function () { return call('listPetitions').then(function (r) { return (r || []).filter(function (x) { return x.status !== 'handled'; }).length; }); } });
+      if (!defs.length) { el.innerHTML = ''; return; }
+      el.innerHTML = defs.map(function (d) { return dashStatTile('…', d.label, d.color, d.tab, d.icon); }).join('');
+      defs.forEach(function (d, i) {
+        d.get().then(function (n) { var nodes = el.querySelectorAll('.dash-stat .num'); if (nodes[i]) nodes[i].textContent = n; })
+          .catch(function () { var nodes = el.querySelectorAll('.dash-stat .num'); if (nodes[i]) nodes[i].textContent = '-'; });
       });
     }
     var PERM_PAGES = ['home', 'announce', 'events', 'calendar', 'venue', 'vset', 'locker', 'projector', 'petition', 'roster', 'email', 'pagetext', 'gongwen', 'system'];
@@ -1293,6 +1368,7 @@
 
     // ---------- 分頁切換（手動控制，避免跨群組殘留） ----------
     function runTabLoad(t) {
+      if (t === '#t-dashboard') loadDashboard();
       if (t === '#t-home') loadHero();
       if (t === '#t-announce') loadAnnounce();
       if (t === '#t-events') loadEvents();
