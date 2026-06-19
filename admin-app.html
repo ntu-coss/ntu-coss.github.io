@@ -138,6 +138,7 @@
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-tool"><i class="bi bi-tools me-2"></i>幹部工具</button></h2>
           <div id="cat-tool" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
             <button class="list-group-item list-group-item-action" data-tab="#t-gongwen">公文產生器</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-meeting">開會簽到表</button>
           </div></div>
         </div>
         <div class="accordion-item">
@@ -432,16 +433,27 @@
           <div id="myseal-status" class="small text-muted mt-1"></div>
         </div>
       </div>
+    </div>
 
-      <hr class="my-4" />
-      <h6><i class="bi bi-card-checklist me-1"></i>開會簽到表</h6>
-      <p class="text-muted small">產生空白簽到表 PDF，欄位：職稱／姓名／簽到／簽到時間。</p>
+    <!-- 開會簽到表 -->
+    <div class="tab-pane fade" id="t-meeting">
+      <h5><i class="bi bi-card-checklist me-1"></i>開會簽到表</h5>
+      <p class="text-muted small">名單自動帶入管理員幹部；無權限的幹部／列席人員可於下方自行新增並儲存。產生 PDF 欄位：職稱／姓名／簽到／簽到時間。</p>
       <div class="row g-2 mb-2" style="max-width:760px">
         <div class="col-12 col-md-6"><label class="form-label mb-0 small">會議名稱</label><input id="mtg-title" class="form-control form-control-sm" placeholder="例：第三次幹部會議" /></div>
         <div class="col-6 col-md-3"><label class="form-label mb-0 small">會議日期</label><input id="mtg-date" type="date" class="form-control form-control-sm" /></div>
-        <div class="col-6 col-md-3"><label class="form-label mb-0 small">列數（空白行）</label><input id="mtg-rows" type="number" class="form-control form-control-sm" value="20" min="1" max="60" /></div>
+        <div class="col-6 col-md-3"><label class="form-label mb-0 small">額外空白行</label><input id="mtg-rows" type="number" class="form-control form-control-sm" value="5" min="0" max="60" /></div>
       </div>
       <button class="btn btn-primary btn-sm" onclick="genMeetingSignIn()"><i class="bi bi-download me-1"></i>產生簽到表 PDF</button>
+
+      <hr class="my-3" />
+      <h6>列席名單</h6>
+      <div class="row g-2 mb-2" style="max-width:560px">
+        <div class="col-5"><label class="form-label mb-0 small">職稱</label><input id="mtg-att-title" class="form-control form-control-sm" placeholder="例：學術部員" /></div>
+        <div class="col-5"><label class="form-label mb-0 small">姓名</label><input id="mtg-att-name" class="form-control form-control-sm" /></div>
+        <div class="col-2 d-flex align-items-end"><button class="btn btn-primary btn-sm w-100" onclick="addMeetingAttendee()">新增</button></div>
+      </div>
+      <div id="mtg-roster"></div>
     </div>
 
     <!-- 頁面說明 -->
@@ -1013,7 +1025,7 @@
       document.getElementById('admin-mgmt').classList.toggle('d-none', !owner);
     }
     // 頁面權限：依管理員可存取頁面顯示/隱藏側邊選單項目
-    var PAGE_LABELS = { home: '首頁橫幅', announce: '公告', events: '活動', calendar: '行事曆', venue: '場地審核', vset: '場地設定', locker: '院櫃', equipment: '設備借用', petition: '陳情', roster: '學生名單', email: '信件範本', pagetext: '頁面說明', gongwen: '公文', system: '系統設定' };
+    var PAGE_LABELS = { home: '首頁橫幅', announce: '公告', events: '活動', calendar: '行事曆', venue: '場地審核', vset: '場地設定', locker: '院櫃', equipment: '設備借用', petition: '陳情', roster: '學生名單', email: '信件範本', pagetext: '頁面說明', gongwen: '公文', meeting: '開會簽到表', system: '系統設定' };
     function pageOf(btn) { return (btn.getAttribute('data-tab') || '').replace('#t-', ''); }
     function applyPagePerms(pages) {
       var all = pages === 'all' || isOwner();
@@ -1045,7 +1057,8 @@
       { tab: '#t-equipment', page: 'equipment', icon: 'bi-projector', color: '#0a9396', title: '設備借用', desc: '設備清單、審核、領用歸還' },
       { tab: '#t-home', page: 'home', icon: 'bi-image', color: '#ee9b00', title: '首頁橫幅', desc: '首頁標題背景設定' },
       { tab: '#t-pagetext', page: 'pagetext', icon: 'bi-card-text', color: '#7209b7', title: '頁面說明', desc: '各表單說明文字' },
-      { tab: '#t-gongwen', page: 'gongwen', icon: 'bi-file-earmark-text', color: '#3a0ca3', title: '公文產生器', desc: '正式公文／簽到表 PDF' },
+      { tab: '#t-gongwen', page: 'gongwen', icon: 'bi-file-earmark-text', color: '#3a0ca3', title: '公文產生器', desc: '正式公文 PDF' },
+      { tab: '#t-meeting', page: 'meeting', icon: 'bi-card-checklist', color: '#4361ee', title: '開會簽到表', desc: '幹部名單簽到表 PDF' },
       { tab: '#t-roster', page: 'roster', icon: 'bi-people', color: '#1d3557', title: '學生名單', desc: '名單查詢與來源設定' },
       { tab: '#t-email', page: 'email', icon: 'bi-envelope', color: '#bc6c25', title: '信件範本', desc: '通知信主旨與內文' },
       { tab: '#t-system', page: 'system', icon: 'bi-gear', color: '#495057', title: '系統設定', desc: '押金、文號、權限等' },
@@ -1081,7 +1094,7 @@
           .catch(function () { var nodes = el.querySelectorAll('.dash-stat .num'); if (nodes[i]) nodes[i].textContent = '-'; });
       });
     }
-    var PERM_PAGES = ['home', 'announce', 'events', 'calendar', 'venue', 'vset', 'locker', 'equipment', 'petition', 'roster', 'email', 'pagetext', 'gongwen', 'system'];
+    var PERM_PAGES = ['home', 'announce', 'events', 'calendar', 'venue', 'vset', 'locker', 'equipment', 'petition', 'roster', 'email', 'pagetext', 'gongwen', 'meeting', 'system'];
     function renderPermChecks() {
       document.getElementById('adm-perms').innerHTML = PERM_PAGES.map(function (p) {
         return '<div class="form-check form-check-inline m-0"><input class="form-check-input perm-chk" type="checkbox" value="' + p + '" id="perm-' + p + '"><label class="form-check-label small" for="perm-' + p + '">' + (PAGE_LABELS[p] || p) + '</label></div>';
@@ -1523,13 +1536,15 @@
           for (i = 0; i < t.length; i++) { page.drawText(t[i], { x: x, y: y - sz, size: sz, font: font, color: black }); x += tw(t[i], sz) + gap; }
           y -= sz * 1.7;
         }
-        // 檔號 / 保存年限（右上角）
+        // 檔號 / 保存年限（右上角）；佔用頂端一塊高度，標題往下避免重疊
+        var topY = PH - M;
         if (v('gw-file') || v('gw-keep')) {
           var ts = 9;
-          page.drawText('檔　號：' + v('gw-file'), { x: RIGHT - 150, y: PH - M - ts, size: ts, font: font, color: black });
-          page.drawText('保存年限：' + v('gw-keep'), { x: RIGHT - 150, y: PH - M - ts * 2.2, size: ts, font: font, color: black });
+          page.drawText('檔　號：' + v('gw-file'), { x: RIGHT - 160, y: topY - ts, size: ts, font: font, color: black });
+          page.drawText('保存年限：' + v('gw-keep'), { x: RIGHT - 160, y: topY - ts * 2.4, size: ts, font: font, color: black });
+          topY -= ts * 2.4 + 12; // 預留檔號區塊高度
         }
-        y = PH - M - 8;
+        y = topY - 6;
 
         // 機關名稱 + 文別（置中大字）
         centerSpaced('國立臺灣大學社會科學院學生會', 18);
@@ -1582,7 +1597,7 @@
           if (v('gw-copy')) block('副本：' + v('gw-copy'), LEFT, 12, CW, 2);
           // 署名：有職名章就只蓋章（不再寫職銜姓名）；否則置中署名文字
           if (jobImg) {
-            var jh = 90, js = jobImg.scale(jh / jobImg.height);
+            var jh = 60, js = jobImg.scale(jh / jobImg.height);
             if (js.width > CW) { js = jobImg.scale(CW / jobImg.width); jh = js.height; }
             ensure(jh + 24); y -= 24;
             page.drawImage(jobImg, { x: LEFT + (CW - js.width) / 2, y: y - jh, width: js.width, height: js.height });
@@ -1616,7 +1631,11 @@
         var PW = 595.28, PH = 841.89, M = 56.7, LEFT = M, RIGHT = PW - M, CW = RIGHT - LEFT;
         var title = document.getElementById('mtg-title').value.trim() || '開會簽到表';
         var dval = document.getElementById('mtg-date').value;
-        var nrows = Math.max(1, Math.min(60, Number(document.getElementById('mtg-rows').value) || 20));
+        var extra = Math.max(0, Math.min(60, Number(document.getElementById('mtg-rows').value) || 0));
+        var roster = await call('listMeetingRoster').catch(function () { return []; });
+        var bodyRows = (roster || []).map(function (p) { return [p.title || '', p.name || '', '', '']; });
+        for (var bk = 0; bk < extra; bk++) bodyRows.push(['', '', '', '']);
+        if (!bodyRows.length) bodyRows.push(['', '', '', '']);
         var cols = [['職稱', 0.18], ['姓名', 0.22], ['簽到', 0.30], ['簽到時間', 0.30]];
         var widths = cols.map(function (c) { return c[1] * CW; });
         function colX(i) { var x = LEFT; for (var k = 0; k < i; k++) x += widths[k]; return x; }
@@ -1639,10 +1658,10 @@
           drawRow(cols.map(function (c) { return c[0]; }), headH, true);
         }
         startPage(true);
-        for (var r = 0; r < nrows; r++) {
+        bodyRows.forEach(function (rv) {
           if (y - rowH < M) startPage(false);
-          drawRow(null, rowH, false);
-        }
+          drawRow(rv, rowH, false);
+        });
         var bytes = await doc.save();
         var blob = new Blob([bytes], { type: 'application/pdf' });
         var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -1653,6 +1672,27 @@
         notify('產生失敗：' + (e && e.message ? e.message : e), false);
       }
     }
+    function loadMeeting() {
+      var md = document.getElementById('mtg-date'); if (md && !md.value) md.value = new Date().toISOString().slice(0, 10);
+      call('listMeetingRoster').then(function (rows) {
+        document.getElementById('mtg-roster').innerHTML = (rows && rows.length) ? '<table class="table table-sm table-bordered align-middle" style="max-width:560px"><thead><tr><th>職稱</th><th>姓名</th><th>來源</th><th></th></tr></thead><tbody>' +
+          rows.map(function (p) {
+            return '<tr><td>' + esc(p.title) + '</td><td>' + esc(p.name) + '</td><td>' + (p.custom ? '<span class="badge bg-info text-dark">自訂</span>' : '<span class="badge bg-secondary">幹部</span>') + '</td>' +
+              '<td>' + (p.custom ? '<button class="btn btn-sm btn-outline-danger" onclick="delMeetingAttendee(\'' + p.id + '\')">刪除</button>' : '') + '</td></tr>';
+          }).join('') + '</tbody></table>' : '<p class="text-muted small">名單為空。</p>';
+      });
+    }
+    function addMeetingAttendee() {
+      var t = document.getElementById('mtg-att-title').value.trim();
+      var n = document.getElementById('mtg-att-name').value.trim();
+      if (!n) { notify('請填寫姓名', false); return; }
+      call('saveMeetingAttendee', { title: t, name: n }).then(function () {
+        document.getElementById('mtg-att-title').value = ''; document.getElementById('mtg-att-name').value = '';
+        notify('已新增'); loadMeeting();
+      });
+    }
+    function delMeetingAttendee(id) { if (confirm('刪除此列席者？')) call('deleteMeetingAttendee', id).then(function () { loadMeeting(); }); }
+
     function autoGwNo() {
       call('nextGongwenNo').then(function (r) {
         document.getElementById('gw-no').value = r.no;
@@ -1683,6 +1723,7 @@
       if (t === '#t-events') loadEvents();
       if (t === '#t-roster') loadSettings();
       if (t === '#t-gongwen') loadGongwen();
+      if (t === '#t-meeting') loadMeeting();
       if (t === '#t-calendar') loadCal();
       if (t === '#t-venue') { loadVenuePending(); loadVenueAll(); }
       if (t === '#t-vset') { loadClosed(); loadSettings(); }
