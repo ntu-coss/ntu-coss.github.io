@@ -556,6 +556,8 @@
             <div class="col-md-2 d-flex align-items-end"><div class="form-check pb-2"><input id="an-pinned" type="checkbox" class="form-check-input" /><label class="form-check-label" for="an-pinned">置頂</label></div></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">發佈人職稱</label><input id="an-atitle" class="form-control" placeholder="例：主任委員" /></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">發佈人姓名</label><input id="an-aname" class="form-control" placeholder="例：王小明" /></div>
+            <div class="col-6"><label class="form-label mb-1 small fw-semibold">上架日期（選填）</label><input id="an-from" type="date" class="form-control" /><div class="form-text">留空＝立即上架</div></div>
+            <div class="col-6"><label class="form-label mb-1 small fw-semibold">下架日期（選填）</label><input id="an-until" type="date" class="form-control" /><div class="form-text">當天仍顯示，隔天自動下架；留空＝不下架</div></div>
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">內容（支援 Markdown）</label><textarea id="an-body" class="form-control" rows="6" placeholder="內容（支援 Markdown）"></textarea></div>
           </div>
         </div>
@@ -585,6 +587,8 @@
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">發佈人職稱</label><input id="ev-atitle" class="form-control" placeholder="例：主任委員" /></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">發佈人姓名</label><input id="ev-aname" class="form-control" placeholder="例：王小明" /></div>
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">卡片摘要（選填）</label><input id="ev-summary" class="form-control" placeholder="顯示在首頁卡片上的簡短說明" /></div>
+            <div class="col-6"><label class="form-label mb-1 small fw-semibold">上架日期（選填）</label><input id="ev-from" type="date" class="form-control" /><div class="form-text">留空＝立即上架</div></div>
+            <div class="col-6"><label class="form-label mb-1 small fw-semibold">下架日期（選填）</label><input id="ev-until" type="date" class="form-control" /><div class="form-text">當天仍顯示，隔天自動下架；留空＝不下架</div></div>
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">詳細內容（支援 Markdown）</label><textarea id="ev-body" class="form-control" rows="5" placeholder="詳細內容（支援 Markdown）"></textarea></div>
             <div class="col-12 d-flex flex-wrap gap-4">
               <div class="form-check"><input id="ev-published" type="checkbox" class="form-check-input" checked /><label class="form-check-label" for="ev-published">發布（顯示於首頁）</label></div>
@@ -756,6 +760,14 @@
     // ---------- 編輯視窗共用 ----------
     function showModal(id) { bootstrap.Modal.getOrCreateInstance(document.getElementById(id)).show(); }
     function hideModal(id) { var m = bootstrap.Modal.getInstance(document.getElementById(id)); if (m) m.hide(); }
+    // 排程上架／下架狀態標籤
+    function schedLabel(r) {
+      var t = new Date().toLocaleDateString('en-CA'); // 本地 YYYY-MM-DD
+      var out = '';
+      if (r.publishFrom && r.publishFrom > t) out += '<span class="badge bg-warning text-dark me-1"><i class="bi bi-clock me-1"></i>排程上架 ' + esc(r.publishFrom) + '</span>';
+      if (r.publishUntil) out += '<span class="badge ' + (r.publishUntil < t ? 'bg-secondary' : 'bg-light text-dark border') + ' me-1">' + (r.publishUntil < t ? '已下架 ' : '下架 ') + esc(r.publishUntil) + '</span>';
+      return out;
+    }
     function openAnnounce(r) {
       if (r) editAnnounce(r); else resetAnnounce();
       document.getElementById('an-modal-title').textContent = r ? '編輯公告' : '新增公告';
@@ -767,6 +779,7 @@
           return '<div class="card mb-2 shadow-sm border-0"><div class="card-body py-2">' +
             '<div class="d-flex justify-content-between align-items-start"><b>' + (r.pinned === 'true' ? '<i class="bi bi-pin-angle-fill text-warning me-1"></i>' : '') + esc(r.title) + '</b><small class="text-muted flex-shrink-0 ms-2">' + esc(r.date) + '</small></div>' +
             '<div class="small text-muted mt-1" style="white-space:pre-wrap;max-height:3rem;overflow:hidden">' + esc(r.body) + '</div>' +
+            (schedLabel(r) ? '<div class="mt-1">' + schedLabel(r) + '</div>' : '') +
             '<div class="mt-2"><button class="btn btn-sm btn-outline-primary" onclick=\'openAnnounce(' + JSON.stringify(r).replace(/'/g, "&#39;") + ')\'><i class="bi bi-pencil me-1"></i>編輯</button> ' +
             '<button class="btn btn-sm btn-outline-danger" onclick="delAnnounce(\'' + r.id + '\')"><i class="bi bi-trash me-1"></i>刪除</button></div>' +
             '</div></div>';
@@ -781,9 +794,11 @@
       document.getElementById('an-pinned').checked = r.pinned === 'true';
       document.getElementById('an-atitle').value = r.authorTitle || '';
       document.getElementById('an-aname').value = r.authorName || '';
+      document.getElementById('an-from').value = r.publishFrom || '';
+      document.getElementById('an-until').value = r.publishUntil || '';
     }
     function resetAnnounce() {
-      ['an-id', 'an-title', 'an-date', 'an-body'].forEach(function (i) { document.getElementById(i).value = ''; });
+      ['an-id', 'an-title', 'an-date', 'an-body', 'an-from', 'an-until'].forEach(function (i) { document.getElementById(i).value = ''; });
       document.getElementById('an-pinned').checked = false;
       document.getElementById('an-atitle').value = (MEPROF && MEPROF.title) || '';
       document.getElementById('an-aname').value = (MEPROF && MEPROF.name) || '';
@@ -793,7 +808,8 @@
         id: document.getElementById('an-id').value, title: document.getElementById('an-title').value,
         date: document.getElementById('an-date').value, body: document.getElementById('an-body').value,
         pinned: document.getElementById('an-pinned').checked,
-        authorTitle: document.getElementById('an-atitle').value, authorName: document.getElementById('an-aname').value
+        authorTitle: document.getElementById('an-atitle').value, authorName: document.getElementById('an-aname').value,
+        publishFrom: document.getElementById('an-from').value, publishUntil: document.getElementById('an-until').value
       }).then(function () { notify('已儲存'); hideModal('announceModal'); loadAnnounce(); });
     }
     function delAnnounce(id) { if (confirm('確定刪除？')) call('deleteAnnouncement', id).then(function () { loadAnnounce(); }); }
@@ -1386,7 +1402,8 @@
             (r.image ? '<img src="' + esc(r.image) + '" style="width:64px;height:48px;object-fit:cover;border-radius:6px">' : '<div style="width:64px;height:48px;border-radius:6px;background:#eef1f6;display:flex;align-items:center;justify-content:center"><i class="bi bi-image text-secondary"></i></div>') +
             '<div class="flex-grow-1"><b>' + esc(r.title) + '</b> ' + (String(r.published) === 'true' ? '<span class="badge bg-success">已發布</span>' : '<span class="badge bg-secondary">未發布</span>') +
             (String(r.signupOpen) === 'true' ? ' <span class="badge bg-info text-dark">開放報名</span>' : '') +
-            '<div class="small text-muted">' + esc(r.date) + '　排序：' + esc(r.order) + '</div></div>' +
+            '<div class="small text-muted">' + esc(r.date) + '　排序：' + esc(r.order) + '</div>' +
+            (schedLabel(r) ? '<div class="mt-1">' + schedLabel(r) + '</div>' : '') + '</div>' +
             '<button class="btn btn-sm btn-outline-primary" onclick=\'openEvent(' + JSON.stringify(r).replace(/'/g, "&#39;") + ')\'><i class="bi bi-pencil me-1"></i>編輯</button> ' +
             (String(r.signupOpen) === 'true' || String(r.signupRoster) === 'true' ? '<button class="btn btn-sm btn-outline-success" onclick="viewRegs(\'' + r.id + '\',\'' + esc(r.title).replace(/'/g, "&#39;") + '\')"><i class="bi bi-people me-1"></i>報名名單</button> ' : '') +
             '<button class="btn btn-sm btn-outline-danger" onclick="delEv(\'' + r.id + '\')"><i class="bi bi-trash me-1"></i>刪除</button>' +
@@ -1408,6 +1425,8 @@
         signupRoster: document.getElementById('ev-signuproster').checked,
         authorTitle: document.getElementById('ev-atitle').value,
         authorName: document.getElementById('ev-aname').value,
+        publishFrom: document.getElementById('ev-from').value,
+        publishUntil: document.getElementById('ev-until').value,
       };
     }
     function saveEv() {
@@ -1427,9 +1446,11 @@
       document.getElementById('ev-signuproster').checked = String(r.signupRoster) === 'true';
       document.getElementById('ev-atitle').value = r.authorTitle || '';
       document.getElementById('ev-aname').value = r.authorName || '';
+      document.getElementById('ev-from').value = r.publishFrom || '';
+      document.getElementById('ev-until').value = r.publishUntil || '';
     }
     function resetEv() {
-      ['ev-id', 'ev-title', 'ev-image', 'ev-date', 'ev-summary', 'ev-body'].forEach(function (id) { document.getElementById(id).value = ''; });
+      ['ev-id', 'ev-title', 'ev-image', 'ev-date', 'ev-summary', 'ev-body', 'ev-from', 'ev-until'].forEach(function (id) { document.getElementById(id).value = ''; });
       document.getElementById('ev-order').value = '0';
       document.getElementById('ev-published').checked = true;
       document.getElementById('ev-signup').checked = false;
