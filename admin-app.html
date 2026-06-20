@@ -584,6 +584,7 @@
             <div class="col-6 col-md-3"><label class="form-label mb-1 small fw-semibold">日期</label><input id="ev-date" type="date" class="form-control" /></div>
             <div class="col-6 col-md-2"><label class="form-label mb-1 small fw-semibold">排序</label><input id="ev-order" type="number" class="form-control" value="0" /></div>
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">圖片網址</label><input id="ev-image" class="form-control" placeholder="建議 1:1 正方形，1200×1200" /></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">網址代稱 slug（選填，活動連結用）</label><input id="ev-slug" class="form-control" placeholder="例：spring-camp-2026" /><div class="form-text">留空＝使用系統亂碼 ID；建議用英數與連字號，較好辨識與分享</div></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">發佈人職稱</label><input id="ev-atitle" class="form-control" placeholder="例：主任委員" /></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">發佈人姓名</label><input id="ev-aname" class="form-control" placeholder="例：王小明" /></div>
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">卡片摘要（選填）</label><input id="ev-summary" class="form-control" placeholder="顯示在首頁卡片上的簡短說明" /></div>
@@ -649,7 +650,7 @@
     // ---------- 設定 + 登入 ----------
     var WORKER_URL = 'https://ntu-coss-api.ntusssa2.workers.dev';
     var CLIENT_ID = '980997931795-8aq3kc0ca3eqovdocb01o646f4effrgi.apps.googleusercontent.com';
-    var OWNERS = ['ntusssa2@gmail.com', 'morgan930906@gmail.com']; // 可調整管理員名單的擁有者
+    // 擁有者判定一律以後端 getMe().owner 為準（OWNER_ADMINS 只存在 Worker，前端不再列出任何 email）
     var TOKEN = null, ME = '', MEPROF = null;
 
     // 用 Bootstrap 的 d-none/d-flex 切換（.d-flex 帶 !important，不能只改 style.display）
@@ -685,12 +686,12 @@
         document.getElementById('admin-email').textContent = email;
         saveToken(token);
         enterApp();
-        applyOwnerUI();
         return call('getMe').then(function (p) {
           MEPROF = p || {};
           var g = ((MEPROF.title || '') + ' ' + (MEPROF.name || '')).trim();
           document.getElementById('greet').textContent = g || MEPROF.email || '管理員';
           resetAnnounce(); resetEv();
+          applyOwnerUI();
           applyPagePerms(MEPROF.pages);
           goTab('#t-dashboard');
         }).catch(function () { goTab('#t-dashboard'); });
@@ -1121,7 +1122,7 @@
         call('saveSetting', 'gw_seq_next', document.getElementById('gw-seq').value || '1'),
       ]).then(function () { notify('已儲存公文文號規範'); });
     }
-    function isOwner() { return OWNERS.indexOf(ME) !== -1; }
+    function isOwner() { return !!(MEPROF && MEPROF.owner); }
     function applyOwnerUI() {
       var owner = isOwner();
       document.getElementById('tab-audit-li').classList.toggle('d-none', !owner);
@@ -1405,6 +1406,7 @@
             '<div class="small text-muted">' + esc(r.date) + '　排序：' + esc(r.order) + '</div>' +
             (schedLabel(r) ? '<div class="mt-1">' + schedLabel(r) + '</div>' : '') + '</div>' +
             '<button class="btn btn-sm btn-outline-primary" onclick=\'openEvent(' + JSON.stringify(r).replace(/'/g, "&#39;") + ')\'><i class="bi bi-pencil me-1"></i>編輯</button> ' +
+            (String(r.published) === 'true' ? '<button class="btn btn-sm btn-outline-secondary" onclick="copyEventLink(\'' + esc(r.slug || r.id) + '\')"><i class="bi bi-link-45deg me-1"></i>複製連結</button> ' : '') +
             (String(r.signupOpen) === 'true' || String(r.signupRoster) === 'true' ? '<button class="btn btn-sm btn-outline-success" onclick="viewRegs(\'' + r.id + '\',\'' + esc(r.title).replace(/'/g, "&#39;") + '\')"><i class="bi bi-people me-1"></i>報名名單</button> ' : '') +
             '<button class="btn btn-sm btn-outline-danger" onclick="delEv(\'' + r.id + '\')"><i class="bi bi-trash me-1"></i>刪除</button>' +
             '</div></div>';
@@ -1427,6 +1429,7 @@
         authorName: document.getElementById('ev-aname').value,
         publishFrom: document.getElementById('ev-from').value,
         publishUntil: document.getElementById('ev-until').value,
+        slug: document.getElementById('ev-slug').value,
       };
     }
     function saveEv() {
@@ -1448,9 +1451,10 @@
       document.getElementById('ev-aname').value = r.authorName || '';
       document.getElementById('ev-from').value = r.publishFrom || '';
       document.getElementById('ev-until').value = r.publishUntil || '';
+      document.getElementById('ev-slug').value = r.slug || '';
     }
     function resetEv() {
-      ['ev-id', 'ev-title', 'ev-image', 'ev-date', 'ev-summary', 'ev-body', 'ev-from', 'ev-until'].forEach(function (id) { document.getElementById(id).value = ''; });
+      ['ev-id', 'ev-title', 'ev-image', 'ev-date', 'ev-summary', 'ev-body', 'ev-from', 'ev-until', 'ev-slug'].forEach(function (id) { document.getElementById(id).value = ''; });
       document.getElementById('ev-order').value = '0';
       document.getElementById('ev-published').checked = true;
       document.getElementById('ev-signup').checked = false;
@@ -1459,6 +1463,13 @@
       document.getElementById('ev-aname').value = (MEPROF && MEPROF.name) || '';
     }
     function delEv(id) { if (confirm('刪除此活動？')) call('deleteEvent', id).then(function () { loadEvents(); }); }
+    function copyEventLink(slugOrId) {
+      var url = location.origin + '/event?id=' + encodeURIComponent(slugOrId);
+      function done() { notify('已複製連結：' + url); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(done).catch(function () { prompt('複製此活動連結：', url); });
+      } else { prompt('複製此活動連結：', url); }
+    }
     function viewRegs(eventId, title) {
       window.__regEvent = { id: eventId, title: title };
       call('listRegistrations', eventId).then(function (rows) {
