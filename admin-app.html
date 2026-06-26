@@ -7,6 +7,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@04f46c6a/qrcode.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async></script>
   <style>
     body { display: flex; flex-direction: column; min-height: 100vh; }
@@ -296,6 +297,7 @@
       <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
         <button class="btn btn-outline-success btn-sm" onclick="allOpen(true)">全部開放借用</button>
         <button class="btn btn-outline-secondary btn-sm" onclick="allOpen(false)">全部關閉</button>
+        <button class="btn btn-outline-primary btn-sm" onclick="openLockerMail()"><i class="bi bi-envelope me-1"></i>統一發信給借用者</button>
       </div>
       <div class="input-group mb-3" style="max-width:440px">
         <span class="input-group-text">查學號</span>
@@ -540,6 +542,32 @@
     </div>
   </div>
 
+  <!-- 院櫃統一發信 視窗 -->
+  <div class="modal fade" id="lockerMailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-envelope me-2"></i>統一發信給院櫃借用者</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <div class="fw-semibold small">選擇收件櫃位（收件地址＝學號@ntu.edu.tw）</div>
+            <div><button class="btn btn-sm btn-outline-secondary" onclick="lkMailToggleAll(true)">全選</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="lkMailToggleAll(false)">全不選</button></div>
+          </div>
+          <div id="lkmail-list" class="list-group mb-3" style="max-height:260px;overflow:auto"></div>
+          <input id="lkmail-subj" class="form-control mb-2" placeholder="主旨" />
+          <textarea id="lkmail-body" class="form-control" rows="6" placeholder="內文"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+          <button class="btn btn-primary" onclick="sendLockerMail()"><i class="bi bi-send me-1"></i>寄送</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 公告 編輯視窗 -->
   <div class="modal fade" id="announceModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -596,11 +624,45 @@
               <div class="form-check"><input id="ev-signup" type="checkbox" class="form-check-input" /><label class="form-check-label" for="ev-signup">開放報名</label></div>
               <div class="form-check"><input id="ev-signuproster" type="checkbox" class="form-check-input" /><label class="form-check-label" for="ev-signuproster">報名須檢核學生名單</label></div>
             </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label mb-1 small fw-semibold">現場 QR 簽到</label>
+              <select id="ev-checkin" class="form-select">
+                <option value="">關閉（不開放簽到）</option>
+                <option value="walkin">現場填表簽到（不分報名與否）</option>
+                <option value="match">對照報名名單（未報名者現場補登）</option>
+              </select>
+              <div class="form-text">開啟後，活動列表會出現「簽到 QR」按鈕供現場張貼掃描。</div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
           <button class="btn btn-primary" onclick="saveEv()"><i class="bi bi-save me-1"></i>儲存活動</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 簽到 QR Code 視窗 -->
+  <div class="modal fade" id="checkinQRModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-qr-code me-2"></i>現場簽到 QR Code</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <div id="qr-title" class="fw-bold mb-2"></div>
+          <div id="qr-box" class="d-inline-block p-3 bg-white border rounded"></div>
+          <div class="text-muted small mt-2">請參與者掃描此 QR Code 進入簽到頁填寫資料。</div>
+          <div class="input-group input-group-sm mt-3" style="max-width:420px;margin:0 auto">
+            <input id="qr-url" class="form-control" readonly />
+            <button class="btn btn-outline-secondary" onclick="copyCheckinUrl()">複製連結</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-primary" onclick="printCheckinQR()"><i class="bi bi-printer me-1"></i>列印張貼</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
         </div>
       </div>
     </div>
@@ -984,7 +1046,8 @@
         '<div class="col"><div class="input-group input-group-sm"><span class="input-group-text">系級</span><input id="ed-dept" class="form-control" value="' + esc(l.dept) + '"></div></div>' +
         '<div class="col"><div class="input-group input-group-sm"><span class="input-group-text">學號</span><input id="ed-sid" class="form-control" value="' + esc(l.studentId) + '"></div></div>' +
         '<div class="col-auto"><button class="btn btn-sm btn-primary" onclick="manualBorrow(' + num + ')">手動設定為借出</button></div></div>' +
-        '<small class="text-muted">手動設定可不受「一人一櫃」限制。</small>';
+        '<small class="text-muted">手動設定可不受「一人一櫃」限制。</small>' +
+        (borrowed ? '<hr><div class="input-group input-group-sm" style="max-width:340px"><span class="input-group-text">收據編號</span><input id="ed-receipt" class="form-control" value="' + esc(l.receiptNo || '') + '" placeholder="例：001"><button class="btn btn-primary" onclick="saveReceipt(' + num + ')">儲存收據編號</button></div>' : '');
       document.getElementById('locker-modal-title').textContent = '櫃位 ' + num;
       document.getElementById('locker-detail').innerHTML = h;
       bootstrap.Modal.getOrCreateInstance(document.getElementById('lockerModal')).show();
@@ -996,6 +1059,38 @@
     function manualBorrow(num) {
       call('editLocker', num, { status: 'borrowed', borrowerName: document.getElementById('ed-name').value, dept: document.getElementById('ed-dept').value, studentId: document.getElementById('ed-sid').value, open: 'true' })
         .then(function () { notify('已更新'); loadLocker(); lockerDetail(num); });
+    }
+    function saveReceipt(num) {
+      call('editLocker', num, { receiptNo: document.getElementById('ed-receipt').value.trim() })
+        .then(function () { notify('已更新收據編號'); loadLocker(); lockerDetail(num); });
+    }
+    function openLockerMail() {
+      var map = window.__lockers || {};
+      var borrowed = Object.keys(map).map(function (k) { return map[k]; })
+        .filter(function (l) { return l.status === 'borrowed' && l.studentId; })
+        .sort(function (a, b) { return Number(a.number) - Number(b.number); });
+      if (!borrowed.length) { notify('目前沒有借用中且有學號的櫃位', false); return; }
+      document.getElementById('lkmail-list').innerHTML = borrowed.map(function (l) {
+        return '<label class="list-group-item d-flex align-items-center gap-2">' +
+          '<input class="form-check-input mt-0 lk-mail-chk" type="checkbox" value="' + l.number + '" checked>' +
+          '<span>櫃位 <b>' + l.number + '</b>　' + esc(l.borrowerName) + '（' + esc(l.dept) + ' / ' + esc(l.studentId) + '）' +
+          '<span class="text-muted small"> → ' + esc(String(l.studentId).toLowerCase()) + '@ntu.edu.tw</span></span></label>';
+      }).join('');
+      document.getElementById('lkmail-subj').value = '';
+      document.getElementById('lkmail-body').value = '';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('lockerMailModal')).show();
+    }
+    function lkMailToggleAll(on) { document.querySelectorAll('.lk-mail-chk').forEach(function (c) { c.checked = on; }); }
+    function sendLockerMail() {
+      var nums = Array.prototype.map.call(document.querySelectorAll('.lk-mail-chk:checked'), function (c) { return Number(c.value); });
+      if (!nums.length) { notify('請至少選擇一個櫃位', false); return; }
+      var subj = document.getElementById('lkmail-subj').value, body = document.getElementById('lkmail-body').value;
+      if (!subj.trim() || !body.trim()) { notify('請填寫主旨與內文', false); return; }
+      if (!confirm('確定寄送給選取的 ' + nums.length + ' 位借用者？\n（收件地址為學號@ntu.edu.tw）')) return;
+      call('emailLockers', nums, subj, body).then(function (res) {
+        notify('已寄送給 ' + (res && res.sent) + ' 人');
+        var m = bootstrap.Modal.getInstance(document.getElementById('lockerMailModal')); if (m) m.hide();
+      });
     }
 
     // ---------- 設備借用 ----------
@@ -1403,11 +1498,13 @@
             (r.image ? '<img src="' + esc(r.image) + '" style="width:64px;height:48px;object-fit:cover;border-radius:6px">' : '<div style="width:64px;height:48px;border-radius:6px;background:#eef1f6;display:flex;align-items:center;justify-content:center"><i class="bi bi-image text-secondary"></i></div>') +
             '<div class="flex-grow-1"><b>' + esc(r.title) + '</b> ' + (String(r.published) === 'true' ? '<span class="badge bg-success">已發布</span>' : '<span class="badge bg-secondary">未發布</span>') +
             (String(r.signupOpen) === 'true' ? ' <span class="badge bg-info text-dark">開放報名</span>' : '') +
+            (r.checkinMode ? ' <span class="badge bg-warning text-dark">簽到中</span>' : '') +
             '<div class="small text-muted">' + esc(r.date) + '　排序：' + esc(r.order) + '</div>' +
             (schedLabel(r) ? '<div class="mt-1">' + schedLabel(r) + '</div>' : '') + '</div>' +
             '<button class="btn btn-sm btn-outline-primary" onclick=\'openEvent(' + JSON.stringify(r).replace(/'/g, "&#39;") + ')\'><i class="bi bi-pencil me-1"></i>編輯</button> ' +
             (String(r.published) === 'true' ? '<button class="btn btn-sm btn-outline-secondary" onclick="copyEventLink(\'' + esc(r.slug || r.id) + '\')"><i class="bi bi-link-45deg me-1"></i>複製連結</button> ' : '') +
-            (String(r.signupOpen) === 'true' || String(r.signupRoster) === 'true' ? '<button class="btn btn-sm btn-outline-success" onclick="viewRegs(\'' + r.id + '\',\'' + esc(r.title).replace(/'/g, "&#39;") + '\')"><i class="bi bi-people me-1"></i>報名名單</button> ' : '') +
+            (r.checkinMode ? '<button class="btn btn-sm btn-outline-warning" onclick="showCheckinQR(\'' + esc(r.slug || r.id) + '\',\'' + esc(r.title).replace(/'/g, "&#39;") + '\')"><i class="bi bi-qr-code me-1"></i>簽到 QR</button> ' : '') +
+            (String(r.signupOpen) === 'true' || String(r.signupRoster) === 'true' || r.checkinMode ? '<button class="btn btn-sm btn-outline-success" onclick="viewRegs(\'' + r.id + '\',\'' + esc(r.title).replace(/'/g, "&#39;") + '\')"><i class="bi bi-people me-1"></i>報名／簽到名單</button> ' : '') +
             '<button class="btn btn-sm btn-outline-danger" onclick="delEv(\'' + r.id + '\')"><i class="bi bi-trash me-1"></i>刪除</button>' +
             '</div></div>';
         }).join('') : '<p class="text-muted">尚無活動，點右上角「新增活動」。</p>';
@@ -1430,6 +1527,7 @@
         publishFrom: document.getElementById('ev-from').value,
         publishUntil: document.getElementById('ev-until').value,
         slug: document.getElementById('ev-slug').value,
+        checkinMode: document.getElementById('ev-checkin').value,
       };
     }
     function saveEv() {
@@ -1452,6 +1550,7 @@
       document.getElementById('ev-from').value = r.publishFrom || '';
       document.getElementById('ev-until').value = r.publishUntil || '';
       document.getElementById('ev-slug').value = r.slug || '';
+      document.getElementById('ev-checkin').value = r.checkinMode || '';
     }
     function resetEv() {
       ['ev-id', 'ev-title', 'ev-image', 'ev-date', 'ev-summary', 'ev-body', 'ev-from', 'ev-until', 'ev-slug'].forEach(function (id) { document.getElementById(id).value = ''; });
@@ -1459,6 +1558,7 @@
       document.getElementById('ev-published').checked = true;
       document.getElementById('ev-signup').checked = false;
       document.getElementById('ev-signuproster').checked = false;
+      document.getElementById('ev-checkin').value = '';
       document.getElementById('ev-atitle').value = (MEPROF && MEPROF.title) || '';
       document.getElementById('ev-aname').value = (MEPROF && MEPROF.name) || '';
     }
@@ -1470,11 +1570,41 @@
         navigator.clipboard.writeText(url).then(done).catch(function () { prompt('複製此活動連結：', url); });
       } else { prompt('複製此活動連結：', url); }
     }
+    function checkinUrlOf(slugOrId) { return location.origin + '/checkin?e=' + encodeURIComponent(slugOrId); }
+    function showCheckinQR(slugOrId, title) {
+      var url = checkinUrlOf(slugOrId);
+      document.getElementById('qr-title').textContent = title;
+      document.getElementById('qr-url').value = url;
+      var box = document.getElementById('qr-box');
+      box.innerHTML = '';
+      if (typeof QRCode === 'undefined') { box.textContent = 'QR 元件載入失敗，請改用下方連結。'; }
+      else { new QRCode(box, { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M }); }
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('checkinQRModal')).show();
+    }
+    function copyCheckinUrl() {
+      var url = document.getElementById('qr-url').value;
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { notify('已複製連結'); });
+      else prompt('複製簽到連結：', url);
+    }
+    function printCheckinQR() {
+      var title = document.getElementById('qr-title').textContent;
+      var url = document.getElementById('qr-url').value;
+      var img = document.querySelector('#qr-box img') || document.querySelector('#qr-box canvas');
+      var src = img ? (img.tagName === 'CANVAS' ? img.toDataURL('image/png') : img.src) : '';
+      var body = '<div style="text-align:center;font-family:sans-serif">' +
+        '<h1 style="margin:0 0 8px">' + esc(title) + '</h1>' +
+        '<h2 style="margin:0 0 24px;font-weight:normal">活動簽到</h2>' +
+        (src ? '<img src="' + src + '" style="width:340px;height:340px">' : '') +
+        '<p style="margin-top:20px;font-size:18px">掃描 QR Code 進行簽到</p>' +
+        '<p style="color:#555;word-break:break-all">' + esc(url) + '</p></div>';
+      printDoc(title + ' 簽到 QR', body, 'th,td{border:none;}');
+    }
     function viewRegs(eventId, title) {
       window.__regEvent = { id: eventId, title: title };
       call('listRegistrations', eventId).then(function (rows) {
         var withEmail = rows.filter(function (r) { return r.email; }).length;
-        var html = '<div class="d-flex justify-content-between align-items-center mb-1"><h6 class="mb-0">報名名單：' + esc(title) + '（' + rows.length + ' 人）</h6>' +
+        var checkedIn = rows.filter(function (r) { return r.checkinAt; }).length;
+        var html = '<div class="d-flex justify-content-between align-items-center mb-1"><h6 class="mb-0">報名／簽到名單：' + esc(title) + '（' + rows.length + ' 人，已簽到 ' + checkedIn + ' 人）</h6>' +
           '<div><button class="btn btn-sm btn-outline-dark me-1" onclick="signInSheet()">簽到表 (PDF)</button>' +
           '<button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById(\'ev-regs\').innerHTML=\'\'">關閉</button></div></div>';
         html += '<div class="card mb-2"><div class="card-body py-2" style="max-width:820px">' +
@@ -1483,9 +1613,10 @@
           '<textarea id="reg-body" class="form-control form-control-sm mb-1" rows="4" placeholder="內文（可自由編輯）"></textarea>' +
           '<button class="btn btn-sm btn-primary" onclick="sendRegMail()">寄送</button></div></div>';
         html += rows.length
-          ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>#</th><th>姓名</th><th>學號</th><th>Email</th><th>系級</th><th>來源</th><th>備註</th><th>時間</th><th></th></tr></thead><tbody>' +
+          ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>#</th><th>姓名</th><th>學號</th><th>Email</th><th>系級</th><th>來源</th><th>簽到</th><th>備註</th><th>時間</th><th></th></tr></thead><tbody>' +
             rows.map(function (r, i) {
-              return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.studentId) + '</td><td class="small">' + esc(r.email) + '</td><td>' + esc(r.dept) + '</td><td>' + esc(r.source) + '</td><td class="small">' + esc(r.note) + '</td><td class="small text-nowrap">' + fmt(r.createdAt) + '</td>' +
+              var ci = r.checkinAt ? '<span class="badge bg-success">✔ ' + fmt(r.checkinAt) + '</span>' : '<span class="text-muted small">—</span>';
+              return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.studentId) + '</td><td class="small">' + esc(r.email) + '</td><td>' + esc(r.dept) + '</td><td>' + esc(r.source) + '</td><td class="small text-nowrap">' + ci + '</td><td class="small">' + esc(r.note) + '</td><td class="small text-nowrap">' + fmt(r.createdAt) + '</td>' +
                 '<td><button class="btn btn-sm btn-outline-danger" onclick="delReg(\'' + r.id + '\')">刪除</button></td></tr>';
             }).join('') + '</tbody></table>'
           : '<p class="text-muted">尚無人報名。</p>';
