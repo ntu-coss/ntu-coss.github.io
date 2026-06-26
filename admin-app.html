@@ -551,10 +551,14 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-1">
             <div class="fw-semibold small">選擇收件櫃位（收件地址＝學號@ntu.edu.tw）</div>
-            <div><button class="btn btn-sm btn-outline-secondary" onclick="lkMailToggleAll(true)">全選</button>
-            <button class="btn btn-sm btn-outline-secondary" onclick="lkMailToggleAll(false)">全不選</button></div>
+            <div class="btn-group btn-group-sm" role="group">
+              <button class="btn btn-outline-secondary" onclick="lkMailToggleAll('all')">全選</button>
+              <button class="btn btn-outline-warning" onclick="lkMailToggleAll('pending')">僅尚未繳費</button>
+              <button class="btn btn-outline-success" onclick="lkMailToggleAll('paid')">僅已繳費</button>
+              <button class="btn btn-outline-secondary" onclick="lkMailToggleAll('none')">全不選</button>
+            </div>
           </div>
           <div id="lkmail-list" class="list-group mb-3" style="max-height:260px;overflow:auto"></div>
           <input id="lkmail-subj" class="form-control mb-2" placeholder="主旨" />
@@ -1071,16 +1075,23 @@
         .sort(function (a, b) { return Number(a.number) - Number(b.number); });
       if (!borrowed.length) { notify('目前沒有借用中且有學號的櫃位', false); return; }
       document.getElementById('lkmail-list').innerHTML = borrowed.map(function (l) {
+        var paid = l.completed === 'true';
+        var badge = paid ? '<span class="badge bg-success">已繳費</span>' : '<span class="badge bg-warning text-dark">待繳費</span>';
         return '<label class="list-group-item d-flex align-items-center gap-2">' +
-          '<input class="form-check-input mt-0 lk-mail-chk" type="checkbox" value="' + l.number + '" checked>' +
-          '<span>櫃位 <b>' + l.number + '</b>　' + esc(l.borrowerName) + '（' + esc(l.dept) + ' / ' + esc(l.studentId) + '）' +
+          '<input class="form-check-input mt-0 lk-mail-chk" type="checkbox" value="' + l.number + '" data-paid="' + paid + '" checked>' +
+          '<span>櫃位 <b>' + l.number + '</b> ' + badge + '　' + esc(l.borrowerName) + '（' + esc(l.dept) + ' / ' + esc(l.studentId) + '）' +
           '<span class="text-muted small"> → ' + esc(String(l.studentId).toLowerCase()) + '@ntu.edu.tw</span></span></label>';
       }).join('');
       document.getElementById('lkmail-subj').value = '';
       document.getElementById('lkmail-body').value = '';
       bootstrap.Modal.getOrCreateInstance(document.getElementById('lockerMailModal')).show();
     }
-    function lkMailToggleAll(on) { document.querySelectorAll('.lk-mail-chk').forEach(function (c) { c.checked = on; }); }
+    function lkMailToggleAll(mode) {
+      document.querySelectorAll('.lk-mail-chk').forEach(function (c) {
+        var paid = c.getAttribute('data-paid') === 'true';
+        c.checked = mode === 'all' ? true : mode === 'none' ? false : mode === 'paid' ? paid : !paid;
+      });
+    }
     function sendLockerMail() {
       var nums = Array.prototype.map.call(document.querySelectorAll('.lk-mail-chk:checked'), function (c) { return Number(c.value); });
       if (!nums.length) { notify('請至少選擇一個櫃位', false); return; }
@@ -1655,10 +1666,13 @@
       var ev = window.__regEvent; if (!ev) return;
       call('listRegistrations', ev.id).then(function (rows) {
         var trs = '';
-        rows.forEach(function (r, i) { trs += '<tr><td style="text-align:center">' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.dept) + '</td><td></td></tr>'; });
+        rows.forEach(function (r, i) {
+          var sig = r.checkinAt ? '<span style="color:#0a7d2c">✔ 已線上簽到 ' + esc(fmt(r.checkinAt)) + '</span>' : '';
+          trs += '<tr><td style="text-align:center">' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.dept) + '</td><td>' + sig + '</td></tr>';
+        });
         for (var k = 0; k < 8; k++) trs += '<tr><td style="text-align:center">' + (rows.length + k + 1) + '</td><td></td><td></td><td></td></tr>';
         var body = '<h2>' + esc(ev.title) + '　簽到表</h2>' +
-          '<table><thead><tr><th style="width:56px">編號</th><th>姓名</th><th style="width:28%">系級</th><th style="width:34%">簽名</th></tr></thead><tbody>' + trs + '</tbody></table>';
+          '<table><thead><tr><th style="width:56px">編號</th><th>姓名</th><th style="width:24%">系級</th><th style="width:38%">簽到時間／親簽</th></tr></thead><tbody>' + trs + '</tbody></table>';
         printDoc(ev.title + ' 簽到表', body, 'td{height:42px;}');
       });
     }
