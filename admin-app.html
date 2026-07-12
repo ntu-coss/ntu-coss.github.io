@@ -714,7 +714,15 @@
 
   <script>
     // ---------- 設定 + 登入 ----------
-    var WORKER_URL = 'https://ntu-coss-api.ntusssa2.workers.dev';
+    // 測試區偵測：部署在 Cloudflare Pages 測試站時自動改打 staging Worker（資料為試算表副本）
+    var IS_STAGING = location.hostname.indexOf('ntu-coss-staging') !== -1;
+    var WORKER_URL = IS_STAGING
+      ? 'https://ntu-coss-api-staging.ntusssa2.workers.dev'
+      : 'https://ntu-coss-api.ntusssa2.workers.dev';
+    if (IS_STAGING) {
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div class="text-center py-1 fw-bold text-white" style="background:#c9302c">⚠️ 測試區後台（staging）— 這裡操作的是測試資料，不影響正式網站</div>');
+    }
     var CLIENT_ID = '980997931795-8aq3kc0ca3eqovdocb01o646f4effrgi.apps.googleusercontent.com';
     // 擁有者判定一律以後端 getMe().owner 為準（OWNER_ADMINS 只存在 Worker，前端不再列出任何 email）
     var TOKEN = null, ME = '', MEPROF = null;
