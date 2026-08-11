@@ -136,6 +136,7 @@
           <div id="cat-page" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
             <button class="list-group-item list-group-item-action active" data-tab="#t-home">首頁橫幅</button>
             <button class="list-group-item list-group-item-action" data-tab="#t-pagetext">頁面說明</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-db">社科院資料庫</button>
           </div></div>
         </div>
         <div class="accordion-item">
@@ -210,6 +211,30 @@
       <div id="cal-list"></div>
     </div>
 
+    <!-- 社科院資料庫（獨立靜態站 ntu-coss.github.io/database）-->
+    <div class="tab-pane fade" id="t-db">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <h5 class="mb-0"><i class="bi bi-database me-1"></i>各系雲端連結</h5>
+        <div>
+          <button class="btn btn-outline-secondary btn-sm" onclick="rebuildDb()"><i class="bi bi-arrow-clockwise me-1"></i>立即重建網站</button>
+          <button class="btn btn-primary btn-sm" onclick="openDbDept()"><i class="bi bi-plus-lg me-1"></i>新增系所</button>
+        </div>
+      </div>
+      <p class="text-muted small mb-2">
+        資料夾請設為「知道連結的人皆可檢視」，否則系統讀不到。可直接貼整串 Drive 網址。
+        改完系所設定後按「立即重建網站」約 2～3 分鐘生效；未按則等每天 03:00 自動重建。
+      </p>
+      <div id="db-dept-list"></div>
+
+      <hr class="my-4" />
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <h5 class="mb-0"><i class="bi bi-megaphone me-1"></i>資料庫公告</h5>
+        <button class="btn btn-primary btn-sm" onclick="openDbPost()"><i class="bi bi-plus-lg me-1"></i>新增公告</button>
+      </div>
+      <p class="text-muted small mb-2">顯示在資料庫站首頁，支援 Markdown。存檔後即時生效，不必重建網站。</p>
+      <div id="db-post-list"></div>
+    </div>
+
     <!-- 場地審核 -->
     <div class="tab-pane fade" id="t-venue">
       <h5>3F 待審核申請</h5>
@@ -222,6 +247,33 @@
         </select>
       </h5>
       <div id="venue-all"></div>
+    </div>
+
+    <!-- 編輯預約 modal（純 CSS overlay，不依賴 bootstrap JS）-->
+    <div id="eb-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1080;align-items:center;justify-content:center">
+      <div class="bg-white rounded shadow p-3" style="max-width:520px;width:92%;max-height:90vh;overflow:auto">
+        <h5 class="mb-3">編輯預約資料</h5>
+        <input type="hidden" id="eb-id" />
+        <div class="mb-2"><label class="form-label mb-1">聯絡人姓名</label><input id="eb-contactName" class="form-control form-control-sm" /></div>
+        <div class="row g-2">
+          <div class="col mb-2"><label class="form-label mb-1">系級</label><input id="eb-dept" class="form-control form-control-sm" /></div>
+          <div class="col mb-2"><label class="form-label mb-1">學號／教職員帳號</label><input id="eb-studentId" class="form-control form-control-sm" />
+            <div class="form-text">寄信地址＝此欄＠ntu.edu.tw，勿填「無」。</div></div>
+        </div>
+        <div id="eb-3f">
+          <div class="mb-2"><label class="form-label mb-1">借用單位</label><input id="eb-org" class="form-control form-control-sm" /></div>
+          <div class="mb-2"><label class="form-label mb-1">借用事由</label><input id="eb-purpose" class="form-control form-control-sm" /></div>
+        </div>
+        <div class="row g-2">
+          <div class="col mb-2"><label class="form-label mb-1">開始</label><input id="eb-start" type="datetime-local" class="form-control form-control-sm" /></div>
+          <div class="col mb-2"><label class="form-label mb-1">結束</label><input id="eb-end" type="datetime-local" class="form-control form-control-sm" /></div>
+        </div>
+        <p class="text-muted small mb-2">注意：修改時間不會自動調整行事曆事件；如需同步，請刪除後重新核准。</p>
+        <div class="text-end">
+          <button class="btn btn-sm btn-secondary me-2" onclick="closeEditBooking()">取消</button>
+          <button class="btn btn-sm btn-primary" onclick="saveBookingEdit()">儲存</button>
+        </div>
+      </div>
     </div>
 
     <!-- 場地設定 -->
@@ -238,6 +290,20 @@
         <div class="col-auto"><label class="form-label mb-0 small">開放未來幾天</label><input id="v207-win" type="number" class="form-control form-control-sm" style="width:130px" /></div>
       </div>
       <button class="btn btn-primary btn-sm mb-3" onclick="saveVenueRules()">儲存借用區間</button>
+
+      <h5>借用規則（申請前顯示，支援 Markdown）</h5>
+      <p class="text-muted small mb-2">申請者選好場地後，會先看到這段規則、勾選「我已詳閱並同意」才能填表單。可用 Markdown（標題 <code>##</code>、清單 <code>1.</code>、引言 <code>&gt;</code>）。</p>
+      <div class="row g-3 mb-2" style="max-width:900px">
+        <div class="col-12 col-md-6">
+          <label class="form-label mb-1 fw-bold">3F 學開 規則</label>
+          <textarea id="rules-3f" class="form-control font-monospace" rows="8" style="font-size:.85rem"></textarea>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label mb-1 fw-bold">207 微學開 規則</label>
+          <textarea id="rules-207" class="form-control font-monospace" rows="8" style="font-size:.85rem"></textarea>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm mb-3" onclick="saveVenueBookingRules()">儲存借用規則</button>
 
       <h5>不開放借用時段（封鎖）</h5>
       <div class="row g-2 align-items-end mb-2">
@@ -694,6 +760,71 @@
       </div>
     </div>
   </div>
+
+  <!-- 資料庫：系所設定 -->
+  <div class="modal fade" id="dbDeptModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-database me-2"></i><span id="db-dept-modal-title">新增系所</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="db-dept-id" />
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label mb-1 small fw-semibold">系所名稱</label><input id="db-dept-name" class="form-control" placeholder="例：經濟學系" /></div>
+            <div class="col-md-3"><label class="form-label mb-1 small fw-semibold">代碼</label><input id="db-dept-code" class="form-control" placeholder="econ" />
+              <div class="form-text">小寫英數字，會出現在網址，設定後勿隨意更改。</div>
+            </div>
+            <div class="col-md-3"><label class="form-label mb-1 small fw-semibold">排序</label><input id="db-dept-order" type="number" class="form-control" value="0" /></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">Drive 資料夾</label><input id="db-dept-folder" class="form-control" placeholder="https://drive.google.com/drive/folders/... 或直接貼資料夾 ID" />
+              <div class="form-text">資料夾需設為「知道連結的人皆可檢視」。留空＝該系顯示為尚未開放。</div>
+            </div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">上傳表單連結（選填）</label><input id="db-dept-upload" class="form-control" placeholder="https://docs.google.com/forms/..." />
+              <div class="form-text">填了才會在該系顯示「上傳檔案」按鈕，各系可用自己的表單。</div>
+            </div>
+            <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" id="db-dept-enabled" checked /><label class="form-check-label" for="db-dept-enabled">啟用（在資料庫站顯示此系）</label></div></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+          <button class="btn btn-primary" onclick="saveDbDept()"><i class="bi bi-save me-1"></i>儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 資料庫：公告 -->
+  <div class="modal fade" id="dbPostModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-megaphone me-2"></i><span id="db-post-modal-title">新增公告</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="db-post-id" />
+          <input type="hidden" id="db-post-createdAt" />
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">標題</label><input id="db-post-title" class="form-control" /></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">內容（Markdown）</label><textarea id="db-post-content" class="form-control" rows="8"></textarea></div>
+            <div class="col-md-4"><label class="form-label mb-1 small fw-semibold">上架日期</label><input id="db-post-from" type="date" class="form-control" /></div>
+            <div class="col-md-4"><label class="form-label mb-1 small fw-semibold">下架日期（選填）</label><input id="db-post-until" type="date" class="form-control" /></div>
+            <div class="col-md-4 d-flex align-items-end">
+              <div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="db-post-published" checked /><label class="form-check-label" for="db-post-published">發布</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="db-post-pinned" /><label class="form-check-label" for="db-post-pinned">置頂</label></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+          <button class="btn btn-primary" onclick="saveDbPost()"><i class="bi bi-save me-1"></i>儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
   </div><!-- /#app -->
 
   <footer class="mt-auto py-4" style="background-color:#f4f5f7">
@@ -913,6 +1044,109 @@
     }
     function delCal(id) { if (confirm('確定刪除？')) call('deleteCalendar', id).then(function () { loadCal(); }); }
 
+    // ---------- 社科院資料庫 ----------
+    var DB_DEPTS = {}, DB_POSTS = {};
+    function loadDb() { loadDbDepts(); loadDbPosts(); }
+    function loadDbDepts() {
+      call('listDbDepts').then(function (rows) {
+        DB_DEPTS = {};
+        rows.forEach(function (r) { DB_DEPTS[r.id] = r; });
+        document.getElementById('db-dept-list').innerHTML = rows.length
+          ? '<table class="table table-sm table-bordered align-middle"><thead><tr><th>系所</th><th>代碼</th><th>Drive 資料夾</th><th>上傳表單</th><th>狀態</th><th>操作</th></tr></thead><tbody>' +
+          rows.map(function (r) {
+            var folder = r.folderId
+              ? '<a href="https://drive.google.com/drive/folders/' + esc(r.folderId) + '" target="_blank" rel="noreferrer">開啟</a>'
+              : '<span class="text-warning">未設定</span>';
+            var up = r.uploadUrl ? '<a href="' + esc(r.uploadUrl) + '" target="_blank" rel="noreferrer">表單</a>' : '<span class="text-muted">—</span>';
+            var on = String(r.enabled) === 'true'
+              ? '<span class="badge bg-success">啟用</span>'
+              : '<span class="badge bg-secondary">停用</span>';
+            return '<tr><td>' + esc(r.name) + '</td><td><code>' + esc(r.code) + '</code></td><td>' + folder + '</td><td>' + up + '</td><td>' + on + '</td>' +
+              '<td><button class="btn btn-sm btn-outline-primary" onclick="openDbDept(\'' + r.id + '\')"><i class="bi bi-pencil"></i></button> ' +
+              '<button class="btn btn-sm btn-outline-danger" onclick="delDbDept(\'' + r.id + '\')"><i class="bi bi-trash"></i></button></td></tr>';
+          }).join('') + '</tbody></table>'
+          : '<p class="text-muted">尚未設定任何系所，點右上角「新增系所」。</p>';
+      });
+    }
+    function openDbDept(id) {
+      var r = id ? DB_DEPTS[id] : null;
+      document.getElementById('db-dept-modal-title').textContent = r ? '編輯系所' : '新增系所';
+      document.getElementById('db-dept-id').value = r ? r.id : '';
+      document.getElementById('db-dept-name').value = r ? r.name : '';
+      document.getElementById('db-dept-code').value = r ? r.code : '';
+      document.getElementById('db-dept-order').value = r ? (r.order || 0) : 0;
+      document.getElementById('db-dept-folder').value = r ? (r.folderId || '') : '';
+      document.getElementById('db-dept-upload').value = r ? (r.uploadUrl || '') : '';
+      document.getElementById('db-dept-enabled').checked = r ? String(r.enabled) === 'true' : true;
+      showModal('dbDeptModal');
+    }
+    function saveDbDept() {
+      call('saveDbDept', {
+        id: document.getElementById('db-dept-id').value,
+        name: document.getElementById('db-dept-name').value,
+        code: document.getElementById('db-dept-code').value,
+        order: document.getElementById('db-dept-order').value,
+        folderId: document.getElementById('db-dept-folder').value,
+        uploadUrl: document.getElementById('db-dept-upload').value,
+        enabled: document.getElementById('db-dept-enabled').checked,
+      }).then(function () {
+        notify('已儲存，記得按「立即重建網站」才會生效');
+        hideModal('dbDeptModal');
+        loadDbDepts();
+      });
+    }
+    function delDbDept(id) {
+      if (confirm('確定刪除此系所？資料庫站下次重建後就會消失。')) {
+        call('deleteDbDept', id).then(function () { loadDbDepts(); });
+      }
+    }
+    function rebuildDb() {
+      if (!confirm('要現在重建資料庫網站嗎？約 2～3 分鐘後生效。')) return;
+      call('triggerDbRebuild').then(function () { notify('已送出重建，請於數分鐘後查看'); });
+    }
+
+    function loadDbPosts() {
+      call('listDbPosts').then(function (rows) {
+        DB_POSTS = {};
+        rows.forEach(function (r) { DB_POSTS[r.id] = r; });
+        document.getElementById('db-post-list').innerHTML = rows.map(function (r) {
+          var badges = (String(r.pinned) === 'true' ? '<span class="badge bg-danger me-1">置頂</span>' : '') +
+            (String(r.published) === 'true' ? '' : '<span class="badge bg-secondary me-1">未發布</span>') + schedLabel(r);
+          return '<div class="card mb-2 shadow-sm border-0"><div class="card-body py-2">' +
+            '<b>' + badges + esc(r.title) + '</b>' +
+            '<div class="small text-muted text-truncate">' + esc((r.content || '').slice(0, 120)) + '</div>' +
+            '<div class="mt-2"><button class="btn btn-sm btn-outline-primary" onclick="openDbPost(\'' + r.id + '\')"><i class="bi bi-pencil me-1"></i>編輯</button> ' +
+            '<button class="btn btn-sm btn-outline-danger" onclick="delDbPost(\'' + r.id + '\')"><i class="bi bi-trash me-1"></i>刪除</button></div></div></div>';
+        }).join('') || '<p class="text-muted">尚無公告。</p>';
+      });
+    }
+    function openDbPost(id) {
+      var r = id ? DB_POSTS[id] : null;
+      document.getElementById('db-post-modal-title').textContent = r ? '編輯公告' : '新增公告';
+      document.getElementById('db-post-id').value = r ? r.id : '';
+      document.getElementById('db-post-createdAt').value = r ? (r.createdAt || '') : '';
+      document.getElementById('db-post-title').value = r ? r.title : '';
+      document.getElementById('db-post-content').value = r ? (r.content || '') : '';
+      document.getElementById('db-post-from').value = r ? (r.publishFrom || '') : new Date().toLocaleDateString('en-CA');
+      document.getElementById('db-post-until').value = r ? (r.publishUntil || '') : '';
+      document.getElementById('db-post-published').checked = r ? String(r.published) === 'true' : true;
+      document.getElementById('db-post-pinned').checked = r ? String(r.pinned) === 'true' : false;
+      showModal('dbPostModal');
+    }
+    function saveDbPost() {
+      call('saveDbPost', {
+        id: document.getElementById('db-post-id').value,
+        createdAt: document.getElementById('db-post-createdAt').value,
+        title: document.getElementById('db-post-title').value,
+        content: document.getElementById('db-post-content').value,
+        publishFrom: document.getElementById('db-post-from').value,
+        publishUntil: document.getElementById('db-post-until').value,
+        published: document.getElementById('db-post-published').checked,
+        pinned: document.getElementById('db-post-pinned').checked,
+      }).then(function () { notify('已儲存'); hideModal('dbPostModal'); loadDbPosts(); });
+    }
+    function delDbPost(id) { if (confirm('確定刪除？')) call('deleteDbPost', id).then(function () { loadDbPosts(); }); }
+
     // ---------- 場地 ----------
     function vname(v) { return v === '3F' ? '3F 學開' : '207 微學開'; }
     function loadVenuePending() {
@@ -931,15 +1165,51 @@
     function loadVenueAll() {
       var f = document.getElementById('venue-filter').value;
       call('listVenueBookings', f ? { status: f } : {}).then(function (rows) {
-        document.getElementById('venue-all').innerHTML = rows.length ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>場地</th><th>聯絡人</th><th>學號</th><th>時間</th><th>狀態</th><th></th></tr></thead><tbody>' +
+        VENUE_ROWS = {}; rows.forEach(function (r) { VENUE_ROWS[r.id] = r; });
+        document.getElementById('venue-all').innerHTML = rows.length ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>場地</th><th>聯絡人</th><th>學號／帳號</th><th>時間</th><th>狀態</th><th></th></tr></thead><tbody>' +
           rows.map(function (r) {
             return '<tr><td>' + vname(r.venue) + '</td><td>' + esc(r.contactName) + '</td><td>' + esc(r.studentId) + '</td><td>' + fmt(r.startISO) + ' ~ ' + fmt(r.endISO) + '</td>' +
               '<td><span class="badge bg-' + (r.status === 'approved' ? 'success' : r.status === 'pending' ? 'warning text-dark' : 'secondary') + '">' + r.status + '</span></td>' +
-              '<td><button class="btn btn-sm btn-outline-danger" onclick="delB(\'' + r.id + '\')">刪除</button></td></tr>';
+              '<td class="text-nowrap"><button class="btn btn-sm btn-outline-primary me-1" onclick="editBooking(\'' + r.id + '\')">編輯</button>' +
+              '<button class="btn btn-sm btn-outline-danger" onclick="delB(\'' + r.id + '\')">刪除</button></td></tr>';
           }).join('') + '</tbody></table>' : '<p class="text-muted">無紀錄。</p>';
       });
     }
     function delB(id) { if (confirm('刪除此預約？（不會刪除行事曆事件）')) call('deleteVenueBooking', id).then(function () { loadVenueAll(); }); }
+
+    // ----- 編輯預約（含申請者資料 / 學號帳號 → 決定寄信地址）-----
+    var VENUE_ROWS = {};
+    function toLocalInput(iso) { var d = new Date(iso); if (isNaN(d)) return ''; var p = function (n) { return String(n).padStart(2, '0'); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+    function editBooking(id) {
+      var r = VENUE_ROWS[id]; if (!r) return;
+      document.getElementById('eb-id').value = id;
+      document.getElementById('eb-contactName').value = r.contactName || '';
+      document.getElementById('eb-dept').value = r.dept || '';
+      document.getElementById('eb-studentId').value = r.studentId || '';
+      document.getElementById('eb-org').value = r.org || '';
+      document.getElementById('eb-purpose').value = r.purpose || '';
+      document.getElementById('eb-start').value = toLocalInput(r.startISO);
+      document.getElementById('eb-end').value = toLocalInput(r.endISO);
+      document.getElementById('eb-3f').style.display = (r.venue === '3F') ? '' : 'none';
+      document.getElementById('eb-overlay').style.display = 'flex';
+    }
+    function closeEditBooking() { document.getElementById('eb-overlay').style.display = 'none'; }
+    function saveBookingEdit() {
+      var id = document.getElementById('eb-id').value;
+      var acct = String(document.getElementById('eb-studentId').value || '').trim();
+      if (!acct || ['無', 'none', 'n/a', 'na', '-'].indexOf(acct.toLowerCase()) !== -1) { alert('學號／帳號不可為空或「無」（寄信地址由此決定）。'); return; }
+      var s = document.getElementById('eb-start').value, e = document.getElementById('eb-end').value;
+      var obj = {
+        contactName: document.getElementById('eb-contactName').value.trim(),
+        dept: document.getElementById('eb-dept').value.trim(),
+        studentId: acct.replace(/@ntu\.edu\.tw$/i, ''),
+        org: document.getElementById('eb-org').value.trim(),
+        purpose: document.getElementById('eb-purpose').value.trim(),
+      };
+      if (s) obj.startISO = new Date(s).toISOString();
+      if (e) obj.endISO = new Date(e).toISOString();
+      call('updateVenueBooking', id, obj).then(function () { notify('已更新'); closeEditBooking(); loadVenuePending(); loadVenueAll(); });
+    }
 
     function loadClosed() {
       call('listClosed').then(function (rows) {
@@ -1218,7 +1488,21 @@
           document.getElementById('gw-defsigner').value = m.gongwen_signer || '';
         }
         document.getElementById('wl-url').value = m.v207_whitelist_url || '';
+        if (document.getElementById('rules-3f')) {
+          document.getElementById('rules-3f').value = m.rules_venue_3F || VENUE_RULES_DEFAULT['3F'];
+          document.getElementById('rules-207').value = m.rules_venue_207 || VENUE_RULES_DEFAULT['207'];
+        }
       });
+    }
+    var VENUE_RULES_DEFAULT = {
+      '3F': '## 3F 學開借用規則\n\n1. 借用需經學生會人工審核，核准後將以 Email 通知。\n2. 借用單位、事由、企劃書連結為必填。\n3. 使用後請維持場地整潔，並依規定歸還。\n\n> 送出申請即表示您已閱讀並同意以上規則。',
+      '207': '## 207 微學開借用規則\n\n1. 207 微學開為線上即時核准。\n2. 借用限學生會白名單內單位（如有設定）。\n3. 使用後請維持場地整潔。\n\n> 送出申請即表示您已閱讀並同意以上規則。'
+    };
+    function saveVenueBookingRules() {
+      Promise.all([
+        call('saveSetting', 'rules_venue_3F', document.getElementById('rules-3f').value),
+        call('saveSetting', 'rules_venue_207', document.getElementById('rules-207').value),
+      ]).then(function () { notify('已儲存借用規則'); });
     }
     function saveVenueRules() {
       Promise.all([
@@ -1243,7 +1527,7 @@
       document.getElementById('admin-mgmt').classList.toggle('d-none', !owner);
     }
     // 頁面權限：依管理員可存取頁面顯示/隱藏側邊選單項目
-    var PAGE_LABELS = { home: '首頁橫幅', announce: '公告', events: '活動', calendar: '行事曆', venue: '場地審核', vset: '場地設定', locker: '院櫃', equipment: '設備借用', petition: '陳情', roster: '學生名單', email: '信件範本', pagetext: '頁面說明', gongwen: '公文', meeting: '開會簽到表', system: '系統設定' };
+    var PAGE_LABELS = { home: '首頁橫幅', announce: '公告', events: '活動', calendar: '行事曆', venue: '場地審核', vset: '場地設定', locker: '院櫃', equipment: '設備借用', petition: '陳情', roster: '學生名單', email: '信件範本', pagetext: '頁面說明', db: '社科院資料庫', gongwen: '公文', meeting: '開會簽到表', system: '系統設定' };
     function pageOf(btn) { return (btn.getAttribute('data-tab') || '').replace('#t-', ''); }
     function applyPagePerms(pages) {
       var all = pages === 'all' || isOwner();
@@ -1275,6 +1559,7 @@
       { tab: '#t-equipment', page: 'equipment', icon: 'bi-projector', color: '#0a9396', title: '設備借用', desc: '設備清單、審核、領用歸還' },
       { tab: '#t-home', page: 'home', icon: 'bi-image', color: '#ee9b00', title: '首頁橫幅', desc: '首頁標題背景設定' },
       { tab: '#t-pagetext', page: 'pagetext', icon: 'bi-card-text', color: '#7209b7', title: '頁面說明', desc: '各表單說明文字' },
+      { tab: '#t-db', page: 'db', icon: 'bi-database', color: '#2a9d8f', title: '社科院資料庫', desc: '各系雲端連結與公告' },
       { tab: '#t-gongwen', page: 'gongwen', icon: 'bi-file-earmark-text', color: '#3a0ca3', title: '公文產生器', desc: '正式公文 PDF' },
       { tab: '#t-meeting', page: 'meeting', icon: 'bi-card-checklist', color: '#4361ee', title: '開會簽到表', desc: '幹部名單簽到表 PDF' },
       { tab: '#t-roster', page: 'roster', icon: 'bi-people', color: '#1d3557', title: '學生名單', desc: '名單查詢與來源設定' },
@@ -1337,7 +1622,7 @@
           .catch(function () { var nodes = el.querySelectorAll('.dash-stat .num'); if (nodes[i]) nodes[i].textContent = '-'; });
       });
     }
-    var PERM_PAGES = ['home', 'announce', 'events', 'calendar', 'venue', 'vset', 'locker', 'equipment', 'petition', 'roster', 'email', 'pagetext', 'gongwen', 'meeting', 'system'];
+    var PERM_PAGES = ['home', 'announce', 'events', 'calendar', 'venue', 'vset', 'locker', 'equipment', 'petition', 'roster', 'email', 'pagetext', 'db', 'gongwen', 'meeting', 'system'];
     function renderPermChecks() {
       document.getElementById('adm-perms').innerHTML = PERM_PAGES.map(function (p) {
         return '<div class="form-check form-check-inline m-0"><input class="form-check-input perm-chk" type="checkbox" value="' + p + '" id="perm-' + p + '"><label class="form-check-label small" for="perm-' + p + '">' + (PAGE_LABELS[p] || p) + '</label></div>';
@@ -2034,6 +2319,7 @@
       if (t === '#t-petition') loadPetitions();
       if (t === '#t-email') loadEmail();
       if (t === '#t-pagetext') loadPageTexts();
+      if (t === '#t-db') loadDb();
       if (t === '#t-system') { loadSettings(); loadAdmins(); }
       if (t === '#t-audit' && isOwner()) loadAudit();
     }
