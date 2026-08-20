@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1d3557"/>
+      <stop offset="1" stop-color="#274c77"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1080" cy="90" r="260" fill="#457b9d" opacity="0.42"/>
+  <circle cx="1120" cy="600" r="310" fill="#2a9d8f" opacity="0.24"/>
+  <rect x="76" y="76" width="12" height="478" rx="6" fill="#8ecae6"/>
+  <text x="130" y="242" fill="#ffffff" font-family="Noto Sans CJK TC, sans-serif" font-size="68" font-weight="700">國立臺灣大學社會科學院學生會</text>
+  <text x="132" y="330" fill="#dceaf5" font-family="Noto Sans, sans-serif" font-size="38">NTU College of Social Sciences</text>
+  <text x="132" y="382" fill="#dceaf5" font-family="Noto Sans, sans-serif" font-size="38">Student Association</text>
+  <text x="132" y="505" fill="#a9d6e5" font-family="Noto Sans CJK TC, sans-serif" font-size="28">公告・活動・場地與院櫃預約・設備借用・法規查詢</text>
+</svg>

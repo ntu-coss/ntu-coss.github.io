@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /admin/
 Disallow: /admin-app.html
 
 Sitemap: https://ntu-coss.github.io/sitemap.xml
