@@ -64,6 +64,7 @@
     </div>
     <div class="offcanvas-body p-0 d-flex flex-column">
       <button class="dash-home-btn" data-tab="#t-dashboard"><i class="bi bi-grid-1x2 me-2"></i>後台首頁</button>
+      <button id="staging-updates-nav" class="dash-home-btn d-none" data-tab="#t-updates"><i class="bi bi-journal-text me-2"></i>測試區更新紀錄</button>
       <div class="accordion accordion-flush flex-grow-1" id="navacc">
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-act"><i class="bi bi-calendar-event me-2"></i>活動管理</button></h2>
@@ -98,7 +99,13 @@
           <div id="cat-page" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
             <button class="list-group-item list-group-item-action active" data-tab="#t-home">首頁橫幅</button>
             <button class="list-group-item list-group-item-action" data-tab="#t-pagetext">頁面說明</button>
-            <button class="list-group-item list-group-item-action" data-tab="#t-db">社科院資料庫</button>
+          </div></div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-db"><i class="bi bi-database me-2"></i>資料庫管理</button></h2>
+          <div id="cat-db" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
+            <button class="list-group-item list-group-item-action" data-tab="#t-db">資料庫設定</button>
+            <button class="list-group-item list-group-item-action" data-tab="#t-dbreview">檔案審核</button>
           </div></div>
         </div>
         <div class="accordion-item">
@@ -132,6 +139,15 @@
       <div id="dash-hero" class="dash-hero mb-4"></div>
       <div id="dash-stats" class="row g-3 mb-4"></div>
       <div id="dash-cards" class="row g-3"></div>
+    </div>
+
+    <!-- 僅 staging 顯示的完整更新紀錄；由前端 hostname 判斷，不占正式站權限 -->
+    <div class="tab-pane fade" id="t-updates">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0"><i class="bi bi-journal-text me-1"></i>測試區更新紀錄</h5>
+        <a class="btn btn-sm btn-outline-secondary" href="/STAGING_UPDATES.md" target="_blank" rel="noreferrer"><i class="bi bi-file-earmark-text me-1"></i>開啟文字版</a>
+      </div>
+      <div id="staging-updates-page" class="staging-update-markdown">載入中……</div>
     </div>
 
     <!-- 公告 -->
@@ -174,31 +190,67 @@
       <div id="cal-list"></div>
     </div>
 
-    <!-- 社科院資料庫（獨立靜態站 ntu-coss.github.io/database）-->
+    <!-- 社科院資料庫設定（獨立靜態站 ntu-coss.github.io/database）-->
     <div class="tab-pane fade" id="t-db">
       <div class="d-flex justify-content-between align-items-center mb-1">
-        <h5 class="mb-0"><i class="bi bi-database me-1"></i>各系雲端連結</h5>
-        <div>
+        <h5 class="mb-0"><i class="bi bi-database me-1"></i>資料庫設定</h5>
+        <div id="db-global-actions">
+          <button class="btn btn-outline-primary btn-sm" onclick="initializeDbDepts()"><i class="bi bi-buildings me-1"></i>補齊四系設定</button>
+          <a class="btn btn-outline-success btn-sm" href="/database-upload">開啟站內上傳頁</a>
           <button class="btn btn-outline-secondary btn-sm" onclick="rebuildDb()"><i class="bi bi-arrow-clockwise me-1"></i>立即重建網站</button>
           <button class="btn btn-primary btn-sm" onclick="openDbDept()"><i class="bi bi-plus-lg me-1"></i>新增系所</button>
         </div>
       </div>
-      <p class="text-muted small mb-2">Drive 資料夾須開放連結檢視；儲存課程設定後按「立即重建網站」。</p>
+      <p class="text-muted small mb-2">各系的課程瀏覽與上傳白名單顯示在下表；點「課程白名單」即可查看或設定。儲存後按「立即重建網站」。</p>
+      <div id="db-scope-notice" class="alert alert-info small py-2 d-none">您是系所管理人，只能檢視並管理所屬系所的課程白名單。</div>
+      <div id="db-automation-status" class="mb-2"></div>
+      <section id="db-native-settings" class="card mb-3 d-none"><div class="card-body">
+        <h6>站內上傳設定</h6>
+        <p class="small text-muted">課程清單直接使用各系「開放上傳」白名單，不必另外同步表單。測試區僅允許已登入的資料庫管理及審核人員上傳。</p>
+        <div class="form-check mb-2"><input id="db-native-enabled" type="checkbox" class="form-check-input"><label for="db-native-enabled" class="form-check-label">開放上傳（測試區仍限管理及審核人員）</label></div>
+        <label for="db-native-email-mode" class="form-label">上傳者信箱</label>
+        <select id="db-native-email-mode" class="form-select mb-2"><option value="hidden">不顯示</option><option value="optional">選填</option><option value="required">必填</option><option value="verified">必填且必須驗證（臺大信箱）</option></select>
+        <label for="db-native-consent-zh" class="form-label">同意文字（中文）</label>
+        <textarea id="db-native-consent-zh" class="form-control mb-2" rows="3" maxlength="2000"></textarea>
+        <label for="db-native-consent-en" class="form-label">同意文字（英文）</label>
+        <textarea id="db-native-consent-en" class="form-control mb-2" rows="3" maxlength="2000"></textarea>
+        <p id="db-native-status" class="small text-muted"></p>
+        <button class="btn btn-sm btn-primary" onclick="saveNativeUploadSettings()">儲存上傳設定</button>
+        <a class="btn btn-sm btn-outline-secondary" href="/database-upload">查看上傳頁</a>
+      </div></section>
       <div id="db-dept-list"></div>
 
-      <hr class="my-4" />
+      <div id="db-global-posts"><hr class="my-4" />
       <div class="d-flex justify-content-between align-items-center mb-1">
         <h5 class="mb-0"><i class="bi bi-megaphone me-1"></i>資料庫公告</h5>
         <button class="btn btn-primary btn-sm" onclick="openDbPost()"><i class="bi bi-plus-lg me-1"></i>新增公告</button>
       </div>
       <p class="text-muted small mb-2">支援 Markdown，存檔即時生效。</p>
       <div id="db-post-list"></div>
+      </div>
+    </div>
+
+    <!-- 資料庫檔案審核（獨立頁面權限 dbreview） -->
+    <div class="tab-pane fade" id="t-dbreview">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <h5 class="mb-0"><i class="bi bi-inbox me-1"></i>檔案審核</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="loadDbReview()"><i class="bi bi-arrow-clockwise me-1"></i>重新整理</button>
+      </div>
+      <p class="text-muted small">核准後才會將 Google Form 暫存資料夾中的檔案移到公開課程資料夾。</p>
+      <div id="db-review-scope-notice" class="alert alert-info small py-2 d-none">下方只顯示您獲授權系所的白名單與待審核檔案。</div>
+
+      <h6 class="mt-3"><i class="bi bi-journal-check me-1"></i>系所課程白名單</h6>
+      <p class="text-muted small mb-2">此處為唯讀摘要；白名單由「資料庫設定」頁管理。</p>
+      <div id="db-review-course-list" class="mb-4"></div>
+
+      <h6><i class="bi bi-hourglass-split me-1"></i>待審核檔案</h6>
+      <div id="db-submission-list"></div>
     </div>
 
     <!-- 場地審核 -->
     <div class="tab-pane fade" id="t-venue">
       <h5>3F 待審核申請</h5>
-      <div id="venue-pending"></div>
+      <div id="venue-pending" class="admin-table-scroll"></div>
       <hr />
       <h5>所有預約紀錄
         <select id="venue-filter" class="form-select form-select-sm d-inline-block w-auto ms-2" onchange="loadVenueAll()">
@@ -206,7 +258,7 @@
           <option value="approved">已核准</option><option value="rejected">已拒絕</option>
         </select>
       </h5>
-      <div id="venue-all"></div>
+      <div id="venue-all" class="admin-table-scroll"></div>
     </div>
 
     <!-- 編輯預約 modal（純 CSS overlay，不依賴 bootstrap JS）-->
@@ -250,14 +302,19 @@
         <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#venue-rule-settings">借用規則（Markdown）</button></h2>
           <div id="venue-rule-settings" class="accordion-collapse collapse" data-bs-parent="#venue-settings-accordion"><div class="accordion-body">
             <p class="text-muted small mb-2">支援 Markdown。</p>
-            <div class="row g-3 mb-2" style="max-width:900px"><div class="col-12 col-md-6"><label class="form-label mb-1 fw-bold">3F 學開 規則</label><textarea id="rules-3f" class="form-control font-monospace" rows="8" style="font-size:.85rem"></textarea></div><div class="col-12 col-md-6"><label class="form-label mb-1 fw-bold">207 微學開 規則</label><textarea id="rules-207" class="form-control font-monospace" rows="8" style="font-size:.85rem"></textarea></div></div>
+            <div class="row g-3 mb-2" style="max-width:1100px">
+              <div class="col-12 col-lg-6"><label class="form-label mb-1 fw-bold">3F 學開 規則（中文）</label><textarea id="rules-3f" class="form-control font-monospace" rows="10" style="font-size:.85rem"></textarea></div>
+              <div class="col-12 col-lg-6"><label class="form-label mb-1 fw-bold">3F Learning Commons Rules (English)</label><textarea id="rules-3f-en" class="form-control font-monospace" rows="10" style="font-size:.85rem"></textarea></div>
+              <div class="col-12 col-lg-6"><label class="form-label mb-1 fw-bold">207 微學開 規則（中文）</label><textarea id="rules-207" class="form-control font-monospace" rows="10" style="font-size:.85rem"></textarea></div>
+              <div class="col-12 col-lg-6"><label class="form-label mb-1 fw-bold">Room 207 Rules (English)</label><textarea id="rules-207-en" class="form-control font-monospace" rows="10" style="font-size:.85rem"></textarea></div>
+            </div>
             <button class="btn btn-primary btn-sm" onclick="saveVenueBookingRules()">儲存借用規則</button>
           </div></div>
         </div>
         <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#venue-closed-settings">不開放借用時段</button></h2>
           <div id="venue-closed-settings" class="accordion-collapse collapse" data-bs-parent="#venue-settings-accordion"><div class="accordion-body">
             <div class="row g-2 align-items-end mb-2"><div class="col-auto"><label class="form-label mb-0 small">場地</label><select id="cl-venue" class="form-select"><option value="3F">3F 學開</option><option value="207">207 微學開</option></select></div><div class="col-auto"><label class="form-label mb-0 small">開始</label><input id="cl-start" type="datetime-local" class="form-control" /></div><div class="col-auto"><label class="form-label mb-0 small">結束</label><input id="cl-end" type="datetime-local" class="form-control" /></div><div class="col-auto"><input id="cl-reason" class="form-control" placeholder="原因（選填）" /></div><div class="col-auto"><button class="btn btn-danger" onclick="addClosed()">新增封鎖</button></div></div>
-            <div id="closed-list"></div>
+            <div id="closed-list" class="admin-table-scroll"></div>
           </div></div>
         </div>
         <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#venue-roster-settings">207 學生名單檢核</button></h2>
@@ -297,6 +354,14 @@
         <button class="btn btn-sm btn-primary mt-1" onclick="saveZones()">儲存區域設定</button>
         <div class="form-text">每區設定編號範圍與是否開放借用（關閉＝前台隱藏該區）。建議以 5 的倍數為界（每欄 5 格）較整齊；最大編號會自動建立對應櫃位。</div>
         <hr class="my-2" />
+        <h6 class="mb-2">整體開放申請期間</h6>
+        <div class="row g-2 align-items-end mb-2" style="max-width:760px">
+          <div class="col-12 col-md-5"><label class="form-label small mb-1" for="lk-apply-from">開始時間（選填）</label><input id="lk-apply-from" type="datetime-local" class="form-control form-control-sm" /></div>
+          <div class="col-12 col-md-5"><label class="form-label small mb-1" for="lk-apply-until">結束時間（選填）</label><input id="lk-apply-until" type="datetime-local" class="form-control form-control-sm" /></div>
+          <div class="col-12 col-md-2 d-grid"><button class="btn btn-primary btn-sm" onclick="saveLockerApplicationWindow()">儲存期間</button></div>
+        </div>
+        <div class="form-text">留空＝不限制該邊界；非開放期間前台仍可查看櫃位，但無法送出申請。時區為 Asia/Taipei。</div>
+        <hr class="my-2" />
         <div class="form-check form-switch">
           <input id="lk-roster" class="form-check-input" type="checkbox" onchange="saveSetting('locker_use_roster', this.checked ? 'true':'false')" />
           <label class="form-check-label">院櫃借用時檢核學生名單（名單於「學生名單」分頁設定）</label>
@@ -314,6 +379,14 @@
         <button class="btn btn-primary" onclick="searchLocker()">搜尋</button>
       </div>
       <div id="lk-search-result" class="mb-2"></div>
+      <section class="card mb-3"><div class="card-body">
+        <label class="form-label fw-semibold" for="lk-return-deadline">鑰匙歸還期限</label>
+        <div class="d-flex flex-wrap gap-2">
+          <input id="lk-return-deadline" type="date" class="form-control" style="max-width:240px" />
+          <button class="btn btn-primary" onclick="saveLockerReturnDeadline()">儲存歸還期限</button>
+        </div>
+        <div class="form-text">期限當日仍可歸還，以臺北日期為準。留空時依原借用規定與公告辦理。設定會顯示於申請頁及新申請的切結書與收據；已下載的文件不會自動更新。此設定不會自動寄信或處理押金。</div>
+      </div></section>
       <p class="text-muted small mb-1">點選櫃位可開放、關閉、完成借用或歸還。</p>
       <div class="mb-2 small">
         <span class="badge" style="background:#e9f7f5;color:#1d3557;border:1px solid #2a9d8f">無人借用</span>
@@ -326,17 +399,22 @@
 
     <!-- 設備借用 -->
     <div class="tab-pane fade" id="t-equipment">
-      <div class="d-flex justify-content-between align-items-center gap-2">
-        <h5 class="mb-0"><i class="bi bi-projector me-1"></i>可借用設備清單</h5>
-        <button class="btn btn-primary btn-sm text-nowrap" onclick="openEquipModal()"><i class="bi bi-plus-lg me-1"></i>新增設備</button>
-      </div>
-      <div id="equip-list" class="mt-3"></div>
-      <hr />
-      <h5>待審核申請</h5>
-      <div id="eqb-pending"></div>
-      <div class="accordion mt-3 admin-settings-accordion" id="equipment-history-accordion">
+      <div class="admin-data-stack">
+        <section class="card admin-data-panel"><div class="card-body">
+          <div class="d-flex justify-content-between align-items-center gap-2">
+            <h5 class="mb-0"><i class="bi bi-projector me-1"></i>可借用設備清單</h5>
+            <button class="btn btn-primary btn-sm text-nowrap" onclick="openEquipModal()"><i class="bi bi-plus-lg me-1"></i>新增設備</button>
+          </div>
+          <div id="equip-list" class="mt-3 admin-table-scroll"></div>
+        </div></section>
+        <section class="card admin-data-panel"><div class="card-body">
+          <h5>待審核申請</h5>
+          <div id="eqb-pending" class="admin-table-scroll"></div>
+        </div></section>
+        <div class="accordion w-100" id="equipment-history-accordion">
         <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#equipment-history"><i class="bi bi-clock-history me-2"></i>全部借用紀錄</button></h2>
-          <div id="equipment-history" class="accordion-collapse collapse"><div class="accordion-body"><div id="eqb-list"></div></div></div>
+          <div id="equipment-history" class="accordion-collapse collapse"><div class="accordion-body"><p class="text-muted small">流程操作若有誤，可由具設備頁權限的幹部填寫原因後撤銷上一步；撤銷同樣會寫入稽核紀錄。</p><div id="eqb-list" class="admin-table-scroll"></div></div></div>
+        </div>
         </div>
       </div>
     </div>
@@ -450,6 +528,19 @@
             <p class="text-muted small mb-1">支援 Markdown；留空使用系統預設條款。</p>
             <textarea id="set-privacy" class="form-control mb-2" rows="8" style="max-width:820px"></textarea>
             <button class="btn btn-primary btn-sm" onclick="saveSetting('privacy_content', document.getElementById('set-privacy').value)">儲存隱私權條款</button>
+            <h6 class="mt-3">隱私權條款（英文）</h6>
+            <textarea id="set-privacy-en" class="form-control mb-2" rows="8" style="max-width:820px"></textarea>
+            <button class="btn btn-primary btn-sm" onclick="saveSetting('privacy_content_en', document.getElementById('set-privacy-en').value)">Save English privacy policy</button>
+          </div></div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sys-review-email-settings"><i class="bi bi-envelope-check me-2"></i>審核通知收件人</button></h2>
+          <div id="sys-review-email-settings" class="accordion-collapse collapse" data-bs-parent="#system-settings-accordion"><div class="accordion-body">
+            <p class="text-muted small">可填多個 Email，以逗號、分號、空白或換行分隔。新的待審核申請會自動通知對應收件人。</p>
+            <div class="mb-2" style="max-width:820px"><label class="form-label small fw-semibold" for="notify-venue">場地借用</label><textarea id="notify-venue" class="form-control" rows="2" placeholder="venue-reviewer@example.com"></textarea></div>
+            <div class="mb-2" style="max-width:820px"><label class="form-label small fw-semibold" for="notify-equipment">設備借用</label><textarea id="notify-equipment" class="form-control" rows="2" placeholder="equipment-reviewer@example.com"></textarea></div>
+            <div class="mb-2" style="max-width:820px"><label class="form-label small fw-semibold" for="notify-db">考古題／資料庫上傳（全域備援收件人）</label><textarea id="notify-db" class="form-control" rows="2" placeholder="database-reviewer@example.com"></textarea></div>
+            <button class="btn btn-primary btn-sm" onclick="saveReviewNotificationSettings()">儲存通知設定</button>
           </div></div>
         </div>
         <div class="accordion-item">
@@ -522,6 +613,13 @@
           <div class="col-6 col-md-4"><label class="form-label small fw-semibold" for="adm-name">姓名</label><input id="adm-name" class="form-control" placeholder="例：王小明" /></div>
           <div class="col-6 col-md-3"><label class="form-label small fw-semibold" for="adm-title">職稱</label><input id="adm-title" class="form-control" placeholder="例：副秘書長" /></div>
           <div class="col-12"><div class="form-check"><input id="adm-all" type="checkbox" class="form-check-input" onchange="document.getElementById('adm-perms').classList.toggle('d-none', this.checked)" /><label class="form-check-label fw-semibold" for="adm-all">完整權限（全部頁面）</label></div><div id="adm-perms" class="d-flex flex-wrap gap-2 mt-2 p-3 border rounded"></div></div>
+          <div class="col-12"><label class="form-label small fw-semibold">資料庫系所範圍</label><div class="d-flex flex-wrap gap-3 p-3 border rounded" id="adm-db-depts">
+            <div class="form-check"><input id="adm-db-all" class="form-check-input" type="checkbox" checked onchange="toggleAdminDbDeptScope(this.checked)" /><label class="form-check-label" for="adm-db-all">全部系所（院學會管理員）</label></div>
+            <div class="form-check"><input class="form-check-input adm-db-dept" type="checkbox" value="econ" id="adm-db-econ" disabled /><label class="form-check-label" for="adm-db-econ">經濟學系</label></div>
+            <div class="form-check"><input class="form-check-input adm-db-dept" type="checkbox" value="ps" id="adm-db-ps" disabled /><label class="form-check-label" for="adm-db-ps">政治學系</label></div>
+            <div class="form-check"><input class="form-check-input adm-db-dept" type="checkbox" value="soc" id="adm-db-soc" disabled /><label class="form-check-label" for="adm-db-soc">社會學系</label></div>
+            <div class="form-check"><input class="form-check-input adm-db-dept" type="checkbox" value="sw" id="adm-db-sw" disabled /><label class="form-check-label" for="adm-db-sw">社會工作學系</label></div>
+          </div><div class="form-text">擁有「資料庫設定」或「檔案審核」權限時套用；系所人員只能查看或審核所勾選系所。</div></div>
         </div>
       </div>
       <div class="modal-footer"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary" onclick="addAdm()"><i class="bi bi-save me-1"></i>儲存管理員</button></div>
@@ -564,8 +662,8 @@
     </div></div>
   </div>
 
-  <div class="modal fade" id="lockerModal" tabindex="-1">
-    <div class="modal-dialog">
+  <div class="modal fade" id="lockerModal" tabindex="-1" aria-labelledby="locker-modal-title">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="locker-modal-title">櫃位</h5>
@@ -617,14 +715,19 @@
         <div class="modal-body">
           <input type="hidden" id="an-id" />
           <div class="row g-3">
-            <div class="col-md-7"><label class="form-label mb-1 small fw-semibold">標題</label><input id="an-title" class="form-control" placeholder="標題" /></div>
+            <div class="col-md-7"><label class="form-label mb-1 small fw-semibold">標題（中文）</label><input id="an-title" class="form-control" placeholder="標題" /></div>
             <div class="col-md-3"><label class="form-label mb-1 small fw-semibold">日期</label><input id="an-date" type="date" class="form-control" /></div>
             <div class="col-md-2 d-flex align-items-end"><div class="form-check pb-2"><input id="an-pinned" type="checkbox" class="form-check-input" /><label class="form-check-label" for="an-pinned">置頂</label></div></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">發佈人職稱</label><input id="an-atitle" class="form-control" placeholder="例：主任委員" /></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">發佈人姓名</label><input id="an-aname" class="form-control" placeholder="例：王小明" /></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">上架日期（選填）</label><input id="an-from" type="date" class="form-control" /><div class="form-text">留空＝立即上架</div></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">下架日期（選填）</label><input id="an-until" type="date" class="form-control" /><div class="form-text">當天仍顯示，隔天自動下架；留空＝不下架</div></div>
-            <div class="col-12"><label class="form-label mb-1 small fw-semibold">內容（支援 Markdown）</label><textarea id="an-body" class="form-control" rows="6" placeholder="內容（支援 Markdown）"></textarea></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">內容（中文，支援 Markdown）</label><textarea id="an-body" class="form-control" rows="6"></textarea></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">Title (English, optional)</label><input id="an-title-en" class="form-control" /></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">Content (English, Markdown, optional)</label><textarea id="an-body-en" class="form-control" rows="6"></textarea><div class="form-text">英文留空時，英文版網站會回退顯示中文。</div></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">Google Drive 附件連結（選填）</label><input id="an-attachment-url" type="url" class="form-control" placeholder="https://drive.google.com/file/d/…/view" /><div class="form-text">請先在 Google Drive 設定適當的共用權限；系統只接受 drive.google.com 或 docs.google.com 的 HTTPS 連結。</div></div>
+            <div class="col-12 col-md-6"><label class="form-label mb-1 small fw-semibold">附件名稱（中文，選填）</label><input id="an-attachment-label" class="form-control" placeholder="例：活動辦法 PDF" /></div>
+            <div class="col-12 col-md-6"><label class="form-label mb-1 small fw-semibold">Attachment label (English, optional)</label><input id="an-attachment-label-en" class="form-control" placeholder="e.g. Event Guidelines (PDF)" /></div>
           </div>
         </div>
         <div class="modal-footer">
@@ -646,17 +749,20 @@
         <div class="modal-body">
           <input type="hidden" id="ev-id" />
           <div class="row g-3">
-            <div class="col-md-7"><label class="form-label mb-1 small fw-semibold">標題</label><input id="ev-title" class="form-control" placeholder="標題" /></div>
+            <div class="col-md-7"><label class="form-label mb-1 small fw-semibold">標題（中文）</label><input id="ev-title" class="form-control" placeholder="標題" /></div>
             <div class="col-6 col-md-3"><label class="form-label mb-1 small fw-semibold">日期</label><input id="ev-date" type="date" class="form-control" /></div>
             <div class="col-6 col-md-2"><label class="form-label mb-1 small fw-semibold">排序</label><input id="ev-order" type="number" class="form-control" value="0" /></div>
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">圖片網址</label><input id="ev-image" class="form-control" placeholder="建議 1:1 正方形，1200×1200" /></div>
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">網址代稱 slug（選填，活動連結用）</label><input id="ev-slug" class="form-control" placeholder="例：spring-camp-2026" /><div class="form-text">留空＝使用系統亂碼 ID；建議用英數與連字號，較好辨識與分享</div></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">發佈人職稱</label><input id="ev-atitle" class="form-control" placeholder="例：主任委員" /></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">發佈人姓名</label><input id="ev-aname" class="form-control" placeholder="例：王小明" /></div>
-            <div class="col-12"><label class="form-label mb-1 small fw-semibold">卡片摘要（選填）</label><input id="ev-summary" class="form-control" placeholder="顯示在首頁卡片上的簡短說明" /></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">卡片摘要（中文，選填）</label><input id="ev-summary" class="form-control" placeholder="顯示在首頁卡片上的簡短說明" /></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">上架日期（選填）</label><input id="ev-from" type="date" class="form-control" /><div class="form-text">留空＝立即上架</div></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">下架日期（選填）</label><input id="ev-until" type="date" class="form-control" /><div class="form-text">當天仍顯示，隔天自動下架；留空＝不下架</div></div>
-            <div class="col-12"><label class="form-label mb-1 small fw-semibold">詳細內容（支援 Markdown）</label><textarea id="ev-body" class="form-control" rows="5" placeholder="詳細內容（支援 Markdown）"></textarea></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">詳細內容（中文，支援 Markdown）</label><textarea id="ev-body" class="form-control" rows="5"></textarea></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">Title (English, optional)</label><input id="ev-title-en" class="form-control" /></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">Card summary (English, optional)</label><input id="ev-summary-en" class="form-control" /></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">Details (English, Markdown, optional)</label><textarea id="ev-body-en" class="form-control" rows="5"></textarea><div class="form-text">英文留空時，英文版網站會回退顯示中文。</div></div>
             <div class="col-12 d-flex flex-wrap gap-4">
               <div class="form-check"><input id="ev-published" type="checkbox" class="form-check-input" checked /><label class="form-check-label" for="ev-published">發布（顯示於首頁）</label></div>
               <div class="form-check"><input id="ev-signup" type="checkbox" class="form-check-input" /><label class="form-check-label" for="ev-signup">開放報名</label></div>
@@ -751,6 +857,10 @@
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">上傳表單連結（選填）</label><input id="db-dept-upload" class="form-control" placeholder="https://docs.google.com/forms/..." />
               <div class="form-text">填了才會在該系顯示「上傳檔案」按鈕，各系可用自己的表單。</div>
             </div>
+            <div class="col-12 col-md-6"><label class="form-label mb-1 small fw-semibold">待審核暫存資料夾</label><input id="db-dept-intake" class="form-control" placeholder="Drive 資料夾連結或 ID" /><div class="form-text">Google Form 檔案先進入此資料夾，核准後才移入課程公開資料夾。</div></div>
+            <div class="col-12 col-md-6"><label class="form-label mb-1 small fw-semibold">系所審核人 Email</label><textarea id="db-dept-reviewers" class="form-control" rows="2" placeholder="reviewer@example.com"></textarea><div class="form-text">多個信箱可用逗號或換行分隔。</div></div>
+            <div class="col-12 col-md-6"><label class="form-label mb-1 small fw-semibold" for="db-dept-storage">檔案持有帳號</label><select id="db-dept-storage" class="form-select"><option value="coss">院學會新資料庫帳號</option><option value="econ">經濟系既有資料庫帳號</option></select><div class="form-text">經濟系核准時由舊帳號建立副本並持有；其他三系由院學會帳號持有。</div></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">課程地圖班別代碼</label><input id="db-dept-coursemap" class="form-control" placeholder="例：3030；政治系可填 3021,3022,3023" /><div class="form-text">用於取得台大課程地圖的參考課程清單；不會直接取代 Drive 內容。</div></div>
             <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" id="db-dept-enabled" checked /><label class="form-check-label" for="db-dept-enabled">啟用（在資料庫站顯示此系）</label></div></div>
           </div>
         </div>
@@ -783,14 +893,24 @@
           <div class="alert alert-info small py-2">
             如有教師要求下架，切換為白名單模式並取消該課程。儲存後仍需重建資料庫站才會生效。
           </div>
+          <div class="card bg-light border-0 mb-3"><div class="card-body py-2">
+            <div class="d-flex justify-content-between align-items-center gap-2"><div><div class="fw-semibold small">從台大 Coursemap 新增課程</div><div class="text-muted small">勾選後建立資料夾並開放瀏覽／上傳；日後取消下方開關只會隱藏，不會刪除資料夾。</div></div><button type="button" class="btn btn-sm btn-outline-primary" onclick="loadDbCourseMap()">讀取 Coursemap</button></div>
+            <div id="db-course-map-result" class="small mt-2"></div>
+            <div id="db-course-map-controls" class="d-none mt-2">
+              <input id="db-course-map-search" class="form-control form-control-sm mb-2" type="search" placeholder="搜尋 Coursemap 課程名稱或代碼" oninput="renderDbCourseMapCandidates()" />
+              <div id="db-course-map-list" class="list-group mb-2" style="max-height:260px;overflow:auto"></div>
+              <button type="button" class="btn btn-sm btn-primary" onclick="createDbCoursesFromMap()"><i class="bi bi-folder-plus me-1"></i>建立勾選課程</button>
+            </div>
+          </div></div>
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="small fw-semibold">Drive 第一層課程資料夾</span>
+            <span class="small fw-semibold">Drive 第一層課程資料夾（分別設定瀏覽／上傳）</span>
             <div class="btn-group btn-group-sm" role="group" aria-label="批次選擇課程">
               <button type="button" class="btn btn-outline-secondary" onclick="toggleDbCourses(true)">全選</button>
               <button type="button" class="btn btn-outline-secondary" onclick="toggleDbCourses(false)">全不選</button>
             </div>
           </div>
           <div id="db-course-missing"></div>
+          <div class="small text-muted mb-2"><span class="badge bg-primary">瀏覽</span> 顯示於公開資料庫　<span class="badge bg-success">上傳</span> 允許審核工作流將檔案放入該課程。</div>
           <div id="db-course-list" class="list-group">
             <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>讀取課程中</div>
           </div>
@@ -815,8 +935,10 @@
           <input type="hidden" id="db-post-id" />
           <input type="hidden" id="db-post-createdAt" />
           <div class="row g-3">
-            <div class="col-12"><label class="form-label mb-1 small fw-semibold">標題</label><input id="db-post-title" class="form-control" /></div>
-            <div class="col-12"><label class="form-label mb-1 small fw-semibold">內容（Markdown）</label><textarea id="db-post-content" class="form-control" rows="8"></textarea></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">標題（中文）</label><input id="db-post-title" class="form-control" /></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">內容（中文，Markdown）</label><textarea id="db-post-content" class="form-control" rows="8"></textarea></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">Title (English, optional)</label><input id="db-post-title-en" class="form-control" /></div>
+            <div class="col-12"><label class="form-label mb-1 small fw-semibold">Content (English, Markdown, optional)</label><textarea id="db-post-content-en" class="form-control" rows="8"></textarea></div>
             <div class="col-md-4"><label class="form-label mb-1 small fw-semibold">上架日期</label><input id="db-post-from" type="date" class="form-control" /></div>
             <div class="col-md-4"><label class="form-label mb-1 small fw-semibold">下架日期（選填）</label><input id="db-post-until" type="date" class="form-control" /></div>
             <div class="col-md-4 d-flex align-items-end">

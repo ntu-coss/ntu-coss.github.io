@@ -14,6 +14,13 @@ table { font-size: .9rem; }
 .admin-settings-accordion .accordion-button{font-weight:650;color:#1d3557;padding:.9rem 1rem;}
 .admin-settings-accordion .accordion-button:not(.collapsed){background:#eef3f8;box-shadow:none;}
 .admin-settings-accordion .accordion-body{padding:1rem 1.15rem 1.2rem;}
+.admin-data-stack{display:grid;gap:1rem;width:100%;max-width:1200px;min-width:0;}
+.admin-data-stack>*{min-width:0;}
+.admin-data-panel{width:100%;min-width:0;border-color:#e1e5eb;}
+.admin-table-scroll{display:block;width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.admin-table-scroll>.table{min-width:720px;margin-bottom:0;}
+.admin-table-scroll>.table.admin-table-compact{min-width:560px;}
+.admin-table-scroll>.table.admin-table-wide{min-width:1080px;}
 .modal .form-control[readonly]{background:#f4f5f7;color:#6c757d;}
 .grid-cell { width:76px;height:70px;border:2px solid #ccc;border-radius:6px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;font-size:.78rem;margin:3px;overflow:hidden;cursor:pointer;padding:2px; }
 .grid-cell b{font-size:1rem;line-height:1.1;}
@@ -52,6 +59,14 @@ table { font-size: .9rem; }
 .dash-notice--danger{--notice-accent:#b02a37;--notice-soft:#fbecee;}
 .dash-notice .dn-title{font-weight:700;color:color-mix(in srgb,var(--notice-accent) 82%,#212529);}
 .dash-notice .dn-body{white-space:pre-wrap;color:#343a40;margin-top:.3rem;padding-right:1.5rem;}
+.staging-update-notice{max-height:none;}
+.staging-update-notice summary{cursor:pointer;color:#146c43;}
+.staging-update-markdown{max-height:32rem;overflow:auto;background:#fff;border:1px solid #d8e9df;border-radius:10px;padding:1rem;}
+#t-updates .staging-update-markdown{max-height:none;}
+.staging-update-markdown h4,.staging-update-markdown h5,.staging-update-markdown h6{color:#1d3557;margin:1rem 0 .45rem;}
+.staging-update-markdown h4:first-child{margin-top:0;}
+.staging-update-markdown p{margin-bottom:.55rem;}
+.staging-update-markdown ul,.staging-update-markdown ol{padding-left:1.35rem;margin-bottom:.7rem;}
 .dash-hero h3{margin:0;font-weight:700;}
 .dash-hero .dash-date{opacity:.85;font-size:.95rem;margin-top:.35rem;}
 .dash-stat{border:0;border-radius:14px;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.08);cursor:pointer;transition:transform .12s,box-shadow .12s;}

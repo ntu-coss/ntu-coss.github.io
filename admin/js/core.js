@@ -149,7 +149,7 @@ function notify(msg, state) {
 function call(name) {
   var args = Array.prototype.slice.call(arguments, 1);
   var ctrl = new AbortController();
-  var timer = setTimeout(function () { ctrl.abort(); }, 15000);
+  var timer = setTimeout(function () { ctrl.abort(); }, 60000);
   return fetch(WORKER_URL + '/api/admin', {
     method: 'POST',
     signal: ctrl.signal,
@@ -162,7 +162,7 @@ function call(name) {
       return data.result;
     });
   }, function (err) {
-    var message = err && err.name === 'AbortError' ? '連線逾時（15 秒無回應）。' : ('連線失敗：' + (err && err.message || err));
+    var message = err && err.name === 'AbortError' ? '連線逾時（60 秒無回應）。' : ('連線失敗：' + (err && err.message || err));
     notify(message, false);
     throw new Error(message);
   }).finally(function () { clearTimeout(timer); });
@@ -213,8 +213,13 @@ document.addEventListener('click', function (event) {
     delDbDept: function () { delDbDept(actionTarget.dataset.id); },
     openDbPost: function () { openDbPost(actionTarget.dataset.id); },
     delDbPost: function () { delDbPost(actionTarget.dataset.id); },
+    approveDbSubmission: function () { approveDbSubmission(actionTarget.dataset.id); },
+    rejectDbSubmission: function () { rejectDbSubmission(actionTarget.dataset.id); },
+    previewDbSubmission: function () { previewDbSubmission(actionTarget.dataset.id); },
+    retryDbCleanup: function () { retryDbCleanup(actionTarget.dataset.id); },
     approveB: function () { approveB(actionTarget.dataset.id); },
     rejectB: function () { rejectB(actionTarget.dataset.id); },
+    resetVenueBooking: function () { resetVenueBooking(actionTarget.dataset.id); },
     editBooking: function () { editBooking(actionTarget.dataset.id); },
     delB: function () { delB(actionTarget.dataset.id); },
     delClosed: function () { delClosed(actionTarget.dataset.id); },
@@ -231,6 +236,7 @@ document.addEventListener('click', function (event) {
     rejectEqb: function () { rejectEqb(actionTarget.dataset.id); },
     pickupEqb: function () { pickupEqb(actionTarget.dataset.id); },
     returnEqb: function () { returnEqb(actionTarget.dataset.id); },
+    undoEqb: function () { undoEqb(actionTarget.dataset.id); },
     delEqb: function () { delEqb(actionTarget.dataset.id); },
     goTab: function () { goTab(actionTarget.dataset.tab); },
     rmAdm: function () { rmAdm(actionTarget.dataset.email); },

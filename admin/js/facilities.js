@@ -23,11 +23,22 @@ function loadVenueAll() {
         return '<tr><td>' + vname(r.venue) + '</td><td>' + esc(r.contactName) + '</td><td>' + esc(r.studentId) + '</td><td>' + fmt(r.startISO) + ' ~ ' + fmt(r.endISO) + '</td>' +
           '<td><span class="badge bg-' + (r.status === 'approved' ? 'success' : r.status === 'pending' ? 'warning text-dark' : 'secondary') + '">' + r.status + '</span></td>' +
           '<td class="text-nowrap"><button class="btn btn-sm btn-outline-primary me-1" data-ui-action="editBooking" data-id="' + esc(r.id) + '">編輯</button>' +
+          (r.canResetToPending ? '<button class="btn btn-sm btn-outline-secondary me-1" data-ui-action="resetVenueBooking" data-id="' + esc(r.id) + '"><i class="bi bi-arrow-counterclockwise me-1"></i>退回待審核</button>' : '') +
           '<button class="btn btn-sm btn-outline-danger" data-ui-action="delB" data-id="' + esc(r.id) + '">刪除</button></td></tr>';
       }).join('') + '</tbody></table>' : '<p class="text-muted">無紀錄。</p>';
   });
 }
 function delB(id) { if (confirm('刪除此預約？（不會刪除行事曆事件）')) call('deleteVenueBooking', id).then(function () { loadVenueAll(); }); }
+function resetVenueBooking(id) {
+  var reason = prompt('請輸入退回待審核的原因（必填，僅供內部紀錄）：');
+  if (reason === null) return;
+  reason = reason.trim();
+  if (!reason) { notify('退回原因為必填', false); return; }
+  call('resetVenueBooking', id, reason).then(function () {
+    notify('已退回待審核，可重新核准或拒絕');
+    loadVenuePending(); loadVenueAll();
+  });
+}
 
 // ----- 編輯預約（含申請者資料 / 學號帳號 → 決定寄信地址）-----
 var VENUE_ROWS = {};
@@ -111,10 +122,13 @@ function lockerCellHtml(num, map) {
     (sid ? '<small class="sid">' + sid + '</small>' : '') + '</span>';
 }
 function loadLocker() {
-  call('getLockerAdmin').then(function (d) {
+  return call('getLockerAdmin').then(function (d) {
     var map = {}; d.lockers.forEach(function (l) { map[Number(l.number)] = l; });
     window.__lockers = map;
+    document.getElementById('lk-return-deadline').value = d.returnDeadline || '';
     if (document.getElementById('lk-roster')) document.getElementById('lk-roster').checked = !!d.useRoster;
+    if (document.getElementById('lk-apply-from')) document.getElementById('lk-apply-from').value = (d.application && d.application.from) || '';
+    if (document.getElementById('lk-apply-until')) document.getElementById('lk-apply-until').value = (d.application && d.application.until) || '';
     window.__zones = d.zones || [];
     renderZoneEditor();
     var html = '';
@@ -137,6 +151,22 @@ function loadLocker() {
       html += '</div></div></div>';
     });
     document.getElementById('locker-grid').innerHTML = html || '<div class="text-muted">尚未設定任何區域。</div>';
+  });
+}
+function saveLockerApplicationWindow() {
+  var from = document.getElementById('lk-apply-from').value;
+  var until = document.getElementById('lk-apply-until').value;
+  if (from && until && from >= until) { notify('結束時間必須晚於開始時間', false); return; }
+  Promise.all([
+    call('saveSetting', 'locker_apply_from', from),
+    call('saveSetting', 'locker_apply_until', until),
+  ]).then(function () { notify('已儲存院櫃開放申請期間'); loadLocker(); });
+}
+function saveLockerReturnDeadline() {
+  var input = document.getElementById('lk-return-deadline');
+  if (!input.reportValidity()) return;
+  return call('saveSetting', 'locker_return_deadline', input.value).then(function () {
+    notify('已儲存鑰匙歸還期限');
   });
 }
 function renderZoneEditor() {
@@ -170,7 +200,8 @@ function lockerDetail(num) {
   var l = window.__lockers[num] || { number: num };
   var borrowed = l.status === 'borrowed';
   var h = '<p class="mb-1">開放借用：<b>' + (l.open === 'true' ? '是' : '否') + '</b>　狀態：<b>' + (l.status || 'available') + '</b>' +
-    (borrowed ? '<br>借用人：' + esc(l.borrowerName) + '（' + esc(l.dept) + ' / ' + esc(l.studentId) + '）' +
+    (borrowed ? '<br>借用人：' + esc(l.borrowerName) + '<br>系級：' + esc(l.dept) + '<br>學號：' + esc(l.studentId) +
+      (l.phone ? '<br>手機：' + esc(l.phone) : '') +
       '<br>完成借用(鑰匙+押金)：' + (l.completed === 'true' ? '是 ' + fmt(l.completedAt) : '否') +
       (l.receiptNo ? '<br>收據編號：<b class="fs-5">' + esc(l.receiptNo) + '</b>' : '') : '') + '</p>' +
     '<div class="d-flex flex-wrap gap-2 mb-2">' +
@@ -178,27 +209,29 @@ function lockerDetail(num) {
     (borrowed && l.completed !== 'true' ? '<button class="btn btn-sm btn-warning" data-ui-action="completeLk" data-number="' + num + '">完成借用（領鑰匙+押金，派發收據）</button>' : '') +
     (borrowed ? '<button class="btn btn-sm btn-success" data-ui-action="returnLk" data-number="' + num + '">歸還（退押金+收鑰匙）</button>' : '') +
     (borrowed ? '<button class="btn btn-sm btn-outline-danger" data-ui-action="clearLk" data-number="' + num + '">清除借用</button>' : '') + '</div>' +
-    '<hr><div class="row g-2"><div class="col"><div class="input-group input-group-sm"><span class="input-group-text">借用人</span><input id="ed-name" class="form-control" value="' + esc(l.borrowerName) + '"></div></div>' +
-    '<div class="col"><div class="input-group input-group-sm"><span class="input-group-text">系級</span><input id="ed-dept" class="form-control" value="' + esc(l.dept) + '"></div></div>' +
-    '<div class="col"><div class="input-group input-group-sm"><span class="input-group-text">學號</span><input id="ed-sid" class="form-control" value="' + esc(l.studentId) + '"></div></div>' +
-    '<div class="col-auto"><button class="btn btn-sm btn-primary" data-ui-action="manualBorrow" data-number="' + num + '">手動設定為借出</button></div></div>' +
+    '<hr><h6 class="mb-3">借用人資料</h6><div class="row g-3">' +
+    '<div class="col-12 col-md-6"><label for="ed-name" class="form-label">借用人</label><input id="ed-name" class="form-control" value="' + esc(l.borrowerName) + '"></div>' +
+    '<div class="col-12 col-md-6"><label for="ed-dept" class="form-label">系級</label><input id="ed-dept" class="form-control" value="' + esc(l.dept) + '"></div>' +
+    '<div class="col-12 col-md-6"><label for="ed-sid" class="form-label">學號</label><input id="ed-sid" class="form-control" value="' + esc(l.studentId) + '"></div>' +
+    '<div class="col-12 col-md-6"><label for="ed-phone" class="form-label">手機</label><input id="ed-phone" type="tel" class="form-control" value="' + esc(l.phone || '') + '"></div>' +
+    '<div class="col-12"><button class="btn btn-primary" data-ui-action="manualBorrow" data-number="' + num + '">' + (borrowed ? '儲存借用人資料' : '手動設定為借出') + '</button></div></div>' +
     '<small class="text-muted">手動設定可不受「一人一櫃」限制。</small>' +
     (borrowed ? '<hr><div class="input-group input-group-sm" style="max-width:340px"><span class="input-group-text">收據編號</span><input id="ed-receipt" class="form-control" value="' + esc(l.receiptNo || '') + '" placeholder="例：001"><button class="btn btn-primary" data-ui-action="saveReceipt" data-number="' + num + '">儲存收據編號</button></div>' : '');
   document.getElementById('locker-modal-title').textContent = '櫃位 ' + num;
   document.getElementById('locker-detail').innerHTML = h;
   bootstrap.Modal.getOrCreateInstance(document.getElementById('lockerModal')).show();
 }
-function toggleOpen(num, open) { call('toggleLockerOpen', num, open).then(function () { loadLocker(); lockerDetail(num); }); }
-function completeLk(num) { call('completeLocker', num).then(function (rno) { notify('已完成借用，收據編號 ' + rno); loadLocker(); lockerDetail(num); }); }
+function toggleOpen(num, open) { call('toggleLockerOpen', num, open).then(function () { return loadLocker(); }).then(function () { lockerDetail(num); }); }
+function completeLk(num) { call('completeLocker', num).then(function (rno) { notify('已完成借用，收據編號 ' + rno); return loadLocker(); }).then(function () { lockerDetail(num); }); }
 function returnLk(num) { if (confirm('確認歸還並退押金？')) call('returnLocker', num).then(function () { notify('已歸還'); loadLocker(); lockerModalHide(); }); }
 function clearLk(num) { if (confirm('清除此櫃位借用資料？')) call('clearLocker', num).then(function () { loadLocker(); lockerModalHide(); }); }
 function manualBorrow(num) {
-  call('editLocker', num, { status: 'borrowed', borrowerName: document.getElementById('ed-name').value, dept: document.getElementById('ed-dept').value, studentId: document.getElementById('ed-sid').value, open: 'true' })
-    .then(function () { notify('已更新'); loadLocker(); lockerDetail(num); });
+  call('editLocker', num, { status: 'borrowed', borrowerName: document.getElementById('ed-name').value, dept: document.getElementById('ed-dept').value, studentId: document.getElementById('ed-sid').value, phone: document.getElementById('ed-phone').value, open: 'true' })
+    .then(function () { notify('已更新'); return loadLocker(); }).then(function () { lockerDetail(num); });
 }
 function saveReceipt(num) {
   call('editLocker', num, { receiptNo: document.getElementById('ed-receipt').value.trim() })
-    .then(function () { notify('已更新收據編號'); loadLocker(); lockerDetail(num); });
+    .then(function () { notify('已更新收據編號'); return loadLocker(); }).then(function () { lockerDetail(num); });
 }
 function openLockerMail() {
   var map = window.__lockers || {};
@@ -251,7 +284,7 @@ function loadEquipment() {
 function loadEquipCatalog() {
   call('listEquipment').then(function (rows) {
     cacheEditRecords('equipment', rows, 'id');
-    document.getElementById('equip-list').innerHTML = rows.length ? '<table class="table table-sm table-bordered align-middle" style="max-width:720px"><thead><tr><th>排序</th><th>設備名稱</th><th>備註</th><th>開放</th><th>操作</th></tr></thead><tbody>' +
+    document.getElementById('equip-list').innerHTML = rows.length ? '<table class="table table-sm table-bordered align-middle admin-table-compact"><thead><tr><th>排序</th><th>設備名稱</th><th>備註</th><th>開放</th><th>操作</th></tr></thead><tbody>' +
       rows.map(function (r) {
         var open = String(r.open) === 'true';
         return '<tr><td>' + esc(r.order) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.note || '') + '</td>' +
@@ -297,27 +330,60 @@ function resetEquip() {
 function toggleEquip(id, open) { call('setEquipmentOpen', id, open).then(function () { notify(open ? '已開放借用' : '已關閉借用'); }); }
 function delEquip(id) { if (confirm('刪除此設備？（不影響既有借用紀錄）')) call('deleteEquipment', id).then(function () { loadEquipCatalog(); }); }
 // 借用紀錄
+function eqFlowDetails(r) {
+  var items = [];
+  if (r.createdAt) items.push('申請：' + fmt(r.createdAt));
+  if (r.approvedAt) items.push('核准：' + fmt(r.approvedAt));
+  if (r.pickedUpAt) items.push('領用：' + fmt(r.pickedUpAt));
+  if (r.returnedAt) items.push('歸還：' + fmt(r.returnedAt));
+  if (r.lastActionAt) items.push('最後異動：' + fmt(r.lastActionAt) + (r.lastActionBy ? '<br><span class="text-muted">' + esc(r.lastActionBy) + '</span>' : ''));
+  if (r.note) items.push('備註：' + esc(r.note));
+  return '<div class="small text-nowrap">' + (items.length ? items.join('<br>') : '—') + '</div>';
+}
+function eqBookingActions(r, includeDelete) {
+  var actions = '';
+  if (r.status === 'pending') {
+    actions += '<button class="btn btn-sm btn-success" data-ui-action="approveEqb" data-id="' + esc(r.id) + '">核准</button> ' +
+      '<button class="btn btn-sm btn-danger" data-ui-action="rejectEqb" data-id="' + esc(r.id) + '">拒絕</button> ';
+  }
+  if (r.status === 'approved') actions += '<button class="btn btn-sm btn-warning" data-ui-action="pickupEqb" data-id="' + esc(r.id) + '">領用</button> ';
+  if (r.status === 'borrowed') actions += '<button class="btn btn-sm btn-success" data-ui-action="returnEqb" data-id="' + esc(r.id) + '">歸還</button> ';
+  if (r.canUndo) actions += '<button class="btn btn-sm btn-outline-secondary" data-ui-action="undoEqb" data-id="' + esc(r.id) + '"><i class="bi bi-arrow-counterclockwise me-1"></i>退回待審核</button> ';
+  if (includeDelete) actions += '<button class="btn btn-sm btn-outline-danger" data-ui-action="delEqb" data-id="' + esc(r.id) + '">刪除</button>';
+  return '<div class="d-flex flex-wrap gap-1">' + actions + '</div>';
+}
+function eqBookingsTable(rows, includeDelete) {
+  if (!rows.length) return '';
+  return '<table class="table table-sm table-bordered align-middle admin-table-wide"><thead><tr><th>設備</th><th>單位／申請人</th><th>系級／學號</th><th>借用事由</th><th>期間</th><th>流程紀錄</th><th>狀態</th><th>操作</th></tr></thead><tbody>' +
+    rows.map(function (r) {
+      return '<tr><td>' + esc(r.equipmentName) + '</td>' +
+        '<td>' + esc(r.unit || '—') + '<br>' + esc(r.borrowerName) + '</td>' +
+        '<td>' + esc(r.dept || '—') + '<br>' + esc(r.studentId) + '</td>' +
+        '<td style="min-width:140px">' + esc(r.purpose || '—') + '</td>' +
+        '<td class="text-nowrap">' + esc(r.fromDate || '—') + '<br>～ ' + esc(r.toDate || '—') + '</td>' +
+        '<td>' + eqFlowDetails(r) + '</td><td>' + eqStatusBadge(r.status) + '</td>' +
+        '<td style="min-width:150px">' + eqBookingActions(r, includeDelete) + '</td></tr>';
+    }).join('') + '</tbody></table>';
+}
 function loadEquipBookings() {
   call('listEquipmentBookings').then(function (rows) {
     var pend = rows.filter(function (r) { return r.status === 'pending'; });
-    document.getElementById('eqb-pending').innerHTML = pend.length ? '<table class="table table-sm table-bordered align-middle"><thead><tr><th>設備</th><th>單位/姓名</th><th>系級/學號</th><th>事由</th><th>期間</th><th>操作</th></tr></thead><tbody>' +
-      pend.map(function (r) {
-        return '<tr><td>' + esc(r.equipmentName) + '</td><td>' + esc(r.unit || '-') + '<br>' + esc(r.borrowerName) + '</td><td>' + esc(r.dept) + '<br>' + esc(r.studentId) + '</td><td>' + esc(r.purpose) + '</td><td>' + esc(r.fromDate) + ' ~ ' + esc(r.toDate) + '</td>' +
-          '<td><button class="btn btn-sm btn-success" data-ui-action="approveEqb" data-id="' + esc(r.id) + '">核准</button> ' +
-          '<button class="btn btn-sm btn-danger" data-ui-action="rejectEqb" data-id="' + esc(r.id) + '">拒絕</button></td></tr>';
-      }).join('') + '</tbody></table>' : '<p class="text-muted">沒有待審核申請。</p>';
-    document.getElementById('eqb-list').innerHTML = rows.length ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>設備</th><th>姓名</th><th>學號</th><th>狀態</th><th>操作</th></tr></thead><tbody>' +
-      rows.map(function (r) {
-        var actions = '';
-        if (r.status === 'approved') actions += '<button class="btn btn-sm btn-warning" data-ui-action="pickupEqb" data-id="' + esc(r.id) + '">領用</button> ';
-        if (r.status === 'borrowed') actions += '<button class="btn btn-sm btn-success" data-ui-action="returnEqb" data-id="' + esc(r.id) + '">歸還</button> ';
-        actions += '<button class="btn btn-sm btn-outline-danger" data-ui-action="delEqb" data-id="' + esc(r.id) + '">刪除</button>';
-        return '<tr><td>' + esc(r.equipmentName) + '</td><td>' + esc(r.borrowerName) + '</td><td>' + esc(r.studentId) + '</td><td>' + eqStatusBadge(r.status) + '</td><td>' + actions + '</td></tr>';
-      }).join('') + '</tbody></table>' : '<p class="text-muted">無紀錄。</p>';
+    document.getElementById('eqb-pending').innerHTML = pend.length ? eqBookingsTable(pend, false) : '<p class="text-muted mb-0">沒有待審核申請。</p>';
+    document.getElementById('eqb-list').innerHTML = rows.length ? eqBookingsTable(rows, true) : '<p class="text-muted mb-0">無紀錄。</p>';
   });
 }
 function approveEqb(id) { call('approveEquipment', id).then(function () { notify('已核准並寄信'); loadEquipBookings(); }); }
 function rejectEqb(id) { var reason = prompt('拒絕原因（選填）：') || ''; call('rejectEquipment', id, reason).then(function () { notify('已拒絕'); loadEquipBookings(); }); }
 function pickupEqb(id) { call('pickupEquipment', id).then(function () { notify('已標記領用'); loadEquipBookings(); }); }
 function returnEqb(id) { if (confirm('確認歸還？')) call('returnEquipment', id).then(function () { notify('已歸還'); loadEquipBookings(); }); }
+function undoEqb(id) {
+  var reason = prompt('請輸入退回待審核的原因（必填，僅供內部紀錄）：');
+  if (reason === null) return;
+  reason = reason.trim();
+  if (!reason) { notify('退回原因為必填', false); return; }
+  call('undoEquipmentStatus', id, reason).then(function () {
+    notify('已退回待審核，可重新核准或拒絕');
+    loadEquipBookings();
+  });
+}
 function delEqb(id) { if (confirm('刪除此紀錄？')) call('deleteEquipment_booking', id).then(function () { loadEquipBookings(); }); }

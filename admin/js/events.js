@@ -44,10 +44,13 @@ function evObj() {
   return {
     id: document.getElementById('ev-id').value || '',
     title: document.getElementById('ev-title').value,
+    titleEn: document.getElementById('ev-title-en').value,
     image: document.getElementById('ev-image').value,
     date: document.getElementById('ev-date').value,
     summary: document.getElementById('ev-summary').value,
+    summaryEn: document.getElementById('ev-summary-en').value,
     body: document.getElementById('ev-body').value,
+    bodyEn: document.getElementById('ev-body-en').value,
     order: document.getElementById('ev-order').value,
     published: document.getElementById('ev-published').checked,
     signupOpen: document.getElementById('ev-signup').checked,
@@ -67,10 +70,13 @@ function saveEv() {
 function editEv(r) {
   document.getElementById('ev-id').value = r.id || '';
   document.getElementById('ev-title').value = r.title || '';
+  document.getElementById('ev-title-en').value = r.titleEn || '';
   document.getElementById('ev-image').value = r.image || '';
   document.getElementById('ev-date').value = r.date || '';
   document.getElementById('ev-summary').value = r.summary || '';
+  document.getElementById('ev-summary-en').value = r.summaryEn || '';
   document.getElementById('ev-body').value = r.body || '';
+  document.getElementById('ev-body-en').value = r.bodyEn || '';
   document.getElementById('ev-order').value = r.order || '0';
   document.getElementById('ev-published').checked = String(r.published) === 'true';
   document.getElementById('ev-signup').checked = String(r.signupOpen) === 'true';
@@ -83,7 +89,7 @@ function editEv(r) {
   document.getElementById('ev-checkin').value = r.checkinMode || '';
 }
 function resetEv() {
-  ['ev-id', 'ev-title', 'ev-image', 'ev-date', 'ev-summary', 'ev-body', 'ev-from', 'ev-until', 'ev-slug'].forEach(function (id) { document.getElementById(id).value = ''; });
+  ['ev-id', 'ev-title', 'ev-title-en', 'ev-image', 'ev-date', 'ev-summary', 'ev-summary-en', 'ev-body', 'ev-body-en', 'ev-from', 'ev-until', 'ev-slug'].forEach(function (id) { document.getElementById(id).value = ''; });
   document.getElementById('ev-order').value = '0';
   document.getElementById('ev-published').checked = true;
   document.getElementById('ev-signup').checked = false;
@@ -143,12 +149,12 @@ function viewRegs(eventId, title) {
       '<textarea id="reg-body" class="form-control form-control-sm mb-1" rows="4" placeholder="內文（可自由編輯）"></textarea>' +
       '<button class="btn btn-sm btn-primary" data-ui-action="sendRegMail">寄送</button></div></div>';
     html += rows.length
-      ? '<table class="table table-sm table-striped align-middle"><thead><tr><th>#</th><th>姓名</th><th>學號</th><th>Email</th><th>系級</th><th>來源</th><th>簽到</th><th>備註</th><th>時間</th><th></th></tr></thead><tbody>' +
+      ? '<div class="admin-table-scroll"><table class="table table-sm table-striped align-middle"><thead><tr><th>#</th><th>姓名</th><th>學號</th><th>Email</th><th>系級</th><th>來源</th><th>簽到</th><th>備註</th><th>時間</th><th></th></tr></thead><tbody>' +
         rows.map(function (r, i) {
           var ci = r.checkinAt ? '<span class="badge bg-success"><i class="bi bi-check-lg me-1" aria-hidden="true"></i>' + fmt(r.checkinAt) + '</span>' : '<span class="text-muted small">—</span>';
           return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.studentId) + '</td><td class="small">' + esc(r.email) + '</td><td>' + esc(r.dept) + '</td><td>' + esc(r.source) + '</td><td class="small text-nowrap">' + ci + '</td><td class="small">' + esc(r.note) + '</td><td class="small text-nowrap">' + fmt(r.createdAt) + '</td>' +
             '<td><button class="btn btn-sm btn-outline-danger" data-ui-action="delReg" data-id="' + esc(r.id) + '">刪除</button></td></tr>';
-        }).join('') + '</tbody></table>'
+        }).join('') + '</tbody></table></div>'
       : '<p class="text-muted">尚無人報名。</p>';
     document.getElementById('ev-regs').innerHTML = html;
   });

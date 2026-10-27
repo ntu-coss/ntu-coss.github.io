@@ -23,6 +23,7 @@ function loadAnnounce() {
       return '<div class="card mb-2 shadow-sm border-0"><div class="card-body py-2">' +
         '<div class="d-flex justify-content-between align-items-start"><b>' + (r.pinned === 'true' ? '<i class="bi bi-pin-angle-fill text-warning me-1"></i>' : '') + esc(r.title) + '</b><small class="text-muted flex-shrink-0 ms-2">' + esc(r.date) + '</small></div>' +
         '<div class="small text-muted mt-1" style="white-space:pre-wrap;max-height:3rem;overflow:hidden">' + esc(r.body) + '</div>' +
+        (r.attachmentUrl ? '<div class="small text-primary mt-1"><i class="bi bi-paperclip me-1"></i>' + esc(r.attachmentLabel || '附件') + '</div>' : '') +
         (schedLabel(r) ? '<div class="mt-1">' + schedLabel(r) + '</div>' : '') +
         '<div class="mt-2">' + editRecordButton('announcement', r.id, true) + ' ' +
         '<button class="btn btn-sm btn-outline-danger" data-ui-action="delAnnounce" data-id="' + esc(r.id) + '"><i class="bi bi-trash me-1"></i>刪除</button></div>' +
@@ -33,8 +34,13 @@ function loadAnnounce() {
 function editAnnounce(r) {
   document.getElementById('an-id').value = r.id;
   document.getElementById('an-title').value = r.title;
+  document.getElementById('an-title-en').value = r.titleEn || '';
   document.getElementById('an-date').value = r.date;
   document.getElementById('an-body').value = r.body;
+  document.getElementById('an-body-en').value = r.bodyEn || '';
+  document.getElementById('an-attachment-url').value = r.attachmentUrl || '';
+  document.getElementById('an-attachment-label').value = r.attachmentLabel || '';
+  document.getElementById('an-attachment-label-en').value = r.attachmentLabelEn || '';
   document.getElementById('an-pinned').checked = r.pinned === 'true';
   document.getElementById('an-atitle').value = r.authorTitle || '';
   document.getElementById('an-aname').value = r.authorName || '';
@@ -42,7 +48,7 @@ function editAnnounce(r) {
   document.getElementById('an-until').value = r.publishUntil || '';
 }
 function resetAnnounce() {
-  ['an-id', 'an-title', 'an-date', 'an-body', 'an-from', 'an-until'].forEach(function (i) { document.getElementById(i).value = ''; });
+  ['an-id', 'an-title', 'an-title-en', 'an-date', 'an-body', 'an-body-en', 'an-from', 'an-until', 'an-attachment-url', 'an-attachment-label', 'an-attachment-label-en'].forEach(function (i) { document.getElementById(i).value = ''; });
   document.getElementById('an-pinned').checked = false;
   document.getElementById('an-atitle').value = (MEPROF && MEPROF.title) || '';
   document.getElementById('an-aname').value = (MEPROF && MEPROF.name) || '';
@@ -50,7 +56,12 @@ function resetAnnounce() {
 function saveAnnounce() {
   call('saveAnnouncement', {
     id: document.getElementById('an-id').value, title: document.getElementById('an-title').value,
+    titleEn: document.getElementById('an-title-en').value,
     date: document.getElementById('an-date').value, body: document.getElementById('an-body').value,
+    bodyEn: document.getElementById('an-body-en').value,
+    attachmentUrl: document.getElementById('an-attachment-url').value,
+    attachmentLabel: document.getElementById('an-attachment-label').value,
+    attachmentLabelEn: document.getElementById('an-attachment-label-en').value,
     pinned: document.getElementById('an-pinned').checked,
     authorTitle: document.getElementById('an-atitle').value, authorName: document.getElementById('an-aname').value,
     publishFrom: document.getElementById('an-from').value, publishUntil: document.getElementById('an-until').value
