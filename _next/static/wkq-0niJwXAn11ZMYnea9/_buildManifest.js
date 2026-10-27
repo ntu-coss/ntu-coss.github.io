@@ -1,45 +1,45 @@
 self.__BUILD_MANIFEST = {
   "/": [
-    "static/chunks/38973vb6tywmw.js"
+    "static/chunks/3j4g44gm1r18q.js"
   ],
   "/_error": [
     "static/chunks/44ewzxv4an1l_.js"
   ],
   "/admin": [
-    "static/chunks/0q9_b9t9sg42b.js"
+    "static/chunks/3m1l-s6xxjf7w.js"
   ],
   "/announcement": [
-    "static/chunks/0_zd4__e2h1tz.js"
+    "static/chunks/05ap4xjjgqbp7.js"
   ],
   "/checkin": [
-    "static/chunks/0w8qob82j12c6.js"
+    "static/chunks/2ik7oodr4xl16.js"
   ],
   "/database-upload": [
-    "static/chunks/3p7jnp1arw85x.js"
+    "static/chunks/0zl04cmolqzmx.js"
   ],
   "/equipment": [
-    "static/chunks/3vwlhxk5i83s2.js"
+    "static/chunks/2o_k7f8xy5j22.js"
   ],
   "/event": [
-    "static/chunks/0qnojml-kbzkq.js"
+    "static/chunks/1kynf7lqtnv6r.js"
   ],
   "/locker": [
-    "static/chunks/0_ts4757o4xo3.js"
+    "static/chunks/1p-yk51uyfoi4.js"
   ],
   "/petition": [
-    "static/chunks/0j9sol_y2gvew.js"
+    "static/chunks/44mtfb5568tzm.js"
   ],
   "/privacy": [
-    "static/chunks/34_j716ns5_hh.js"
+    "static/chunks/3ob-iopfy_u8l.js"
   ],
   "/regulations": [
-    "static/chunks/0j7o9d573onkx.js"
+    "static/chunks/2r3n5u9zauqke.js"
   ],
   "/updates": [
-    "static/chunks/0hyciiib621v7.js"
+    "static/chunks/2-zk89rnelqo6.js"
   ],
   "/venue": [
-    "static/chunks/0i4_-5d-_2o1p.js"
+    "static/chunks/4139e2a7w3h43.js"
   ],
   "__rewrites": {
     "afterFiles": [],

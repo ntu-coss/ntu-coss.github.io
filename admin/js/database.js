@@ -75,12 +75,18 @@ function loadDbDepts() {
       : '<p class="text-muted">尚未設定任何系所，點右上角「新增系所」。</p>';
   });
 }
-function initializeDbDepts() {
-  call('initializeDbDepts').then(function (result) {
+function initializeDbDepts(button) {
+  var status = document.getElementById('db-initialize-status');
+  if (button) button.disabled = true;
+  status.textContent = '正在檢查並新增缺少的系所，請稍候……';
+  return call('initializeDbDepts').then(function (result) {
     var count = Number(result && result.count) || 0;
-    notify(count ? '已補上 ' + count + ' 個缺少的系所設定。' : '四系設定已齊全，沒有新增資料。');
+    status.textContent = count ? '已新增 ' + count + ' 個系所。請在下表設定資料夾與課程白名單。' : '四系都已存在，無需新增。此按鈕不會建立雲端資料夾。';
+    notify(status.textContent);
     loadDbDepts();
-  });
+  }).catch(function (error) {
+    status.textContent = '新增失敗：' + (error.message || '請重新登入後再試。');
+  }).finally(function () { if (button) button.disabled = false; });
 }
 function openDbDept(id) {
   var r = id ? DB_DEPTS[id] : null;

@@ -195,7 +195,7 @@
       <div class="d-flex justify-content-between align-items-center mb-1">
         <h5 class="mb-0"><i class="bi bi-database me-1"></i>資料庫設定</h5>
         <div id="db-global-actions">
-          <button class="btn btn-outline-primary btn-sm" onclick="initializeDbDepts()"><i class="bi bi-buildings me-1"></i>補齊四系設定</button>
+          <button class="btn btn-outline-primary btn-sm" onclick="initializeDbDepts(this)"><i class="bi bi-buildings me-1"></i>新增缺少的系所</button>
           <a class="btn btn-outline-success btn-sm" href="/database-upload">開啟站內上傳頁</a>
           <button class="btn btn-outline-secondary btn-sm" onclick="rebuildDb()"><i class="bi bi-arrow-clockwise me-1"></i>立即重建網站</button>
           <button class="btn btn-primary btn-sm" onclick="openDbDept()"><i class="bi bi-plus-lg me-1"></i>新增系所</button>
@@ -204,6 +204,7 @@
       <p class="text-muted small mb-2">各系的課程瀏覽與上傳白名單顯示在下表；點「課程白名單」即可查看或設定。儲存後按「立即重建網站」。</p>
       <div id="db-scope-notice" class="alert alert-info small py-2 d-none">您是系所管理人，只能檢視並管理所屬系所的課程白名單。</div>
       <div id="db-automation-status" class="mb-2"></div>
+      <div id="db-initialize-status" class="small mb-2" role="status" aria-live="polite"></div>
       <section id="db-native-settings" class="card mb-3 d-none"><div class="card-body">
         <h6>站內上傳設定</h6>
         <p class="small text-muted">課程清單直接使用各系「開放上傳」白名單，不必另外同步表單。測試區僅允許已登入的資料庫管理及審核人員上傳。</p>
