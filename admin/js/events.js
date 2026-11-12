@@ -23,10 +23,12 @@ function openEvent(r) {
 function loadEvents() {
   call('listEvents').then(function (rows) {
     cacheEditRecords('event', rows, 'id');
+    var eventId = new URLSearchParams(location.search).get('event');
+    if (eventId) { var chosen=rows.find(function(r){return r.id===eventId;});document.getElementById('ev-list').innerHTML='';document.getElementById('ev-list').previousElementSibling.classList.add('d-none'); if(!chosen){document.getElementById('ev-regs').textContent='找不到活動或無存取權。';return;}viewRegs(chosen.id,chosen.title);return; }
     document.getElementById('ev-list').innerHTML = rows.length ? rows.map(function (r) {
       return '<div class="card mb-2 shadow-sm border-0"><div class="card-body py-2 d-flex align-items-center gap-2">' +
         (r.image ? '<img src="' + esc(r.image) + '" style="width:64px;height:48px;object-fit:cover;border-radius:6px">' : '<div style="width:64px;height:48px;border-radius:6px;background:#eef1f6;display:flex;align-items:center;justify-content:center"><i class="bi bi-image text-secondary"></i></div>') +
-        '<div class="flex-grow-1"><b>' + esc(r.title) + '</b> ' + (String(r.published) === 'true' ? '<span class="badge bg-success">已發布</span>' : '<span class="badge bg-secondary">未發布</span>') +
+        '<div class="flex-grow-1"><a href="/admin/?event=' + encodeURIComponent(r.id) + '" class="fw-bold">' + esc(r.title) + '</a> ' + (String(r.published) === 'true' ? '<span class="badge bg-success">已發布</span>' : '<span class="badge bg-secondary">未發布</span>') +
         (String(r.signupOpen) === 'true' ? ' <span class="badge bg-info text-dark">開放報名</span>' : '') +
         (r.checkinMode ? ' <span class="badge bg-warning text-dark">簽到中</span>' : '') +
         '<div class="small text-muted">' + esc(r.date) + '　排序：' + esc(r.order) + '</div>' +
@@ -34,7 +36,7 @@ function loadEvents() {
         editRecordButton('event', r.id, true) + ' ' +
         (String(r.published) === 'true' ? '<button class="btn btn-sm btn-outline-secondary" data-ui-action="copyEventLink" data-slug="' + esc(r.slug || r.id) + '"><i class="bi bi-link-45deg me-1"></i>複製連結</button> ' : '') +
         (r.checkinMode ? '<button class="btn btn-sm btn-outline-warning" data-ui-action="showCheckinQR" data-slug="' + esc(r.slug || r.id) + '" data-title="' + esc(r.title) + '"><i class="bi bi-qr-code me-1"></i>簽到 QR</button> ' : '') +
-        (r.formUrl || r.responseSheetUrl || String(r.signupOpen) === 'true' || String(r.signupRoster) === 'true' || r.checkinMode ? '<button class="btn btn-sm btn-outline-success" data-ui-action="viewRegs" data-id="' + esc(r.id) + '" data-title="' + esc(r.title) + '"><i class="bi bi-people me-1"></i>報名／簽到名單</button> ' : '') +
+        (r.formUrl || r.responseSheetUrl || String(r.signupOpen) === 'true' || String(r.signupRoster) === 'true' || r.checkinMode ? '<a class="btn btn-sm btn-outline-success" href="/admin/?event=' + encodeURIComponent(r.id) + '">管理活動</a> ' : '') +
         '<button class="btn btn-sm btn-outline-danger" data-ui-action="delEv" data-id="' + esc(r.id) + '"><i class="bi bi-trash me-1"></i>刪除</button>' +
         '</div></div>';
     }).join('') : '<p class="text-muted">尚無活動，點右上角「新增活動」。</p>';
@@ -113,7 +115,7 @@ function resetEv() {
   document.getElementById('ev-atitle').value = (MEPROF && MEPROF.title) || '';
   document.getElementById('ev-aname').value = (MEPROF && MEPROF.name) || '';
 }
-function delEv(id) { if (confirm('刪除此活動？')) call('deleteEvent', id).then(function () { loadEvents(); }); }
+function delEv(id) { if (confirm('刪除此活動？')) call('deleteEvent', id).then(function () { if(new URLSearchParams(location.search).has('event'))location.href='/admin/?tab=events';else loadEvents(); }); }
 function copyEventLink(slugOrId) {
   var url = location.origin + '/event?id=' + encodeURIComponent(slugOrId);
   function done() { notify('已複製連結：' + url); }
@@ -156,15 +158,8 @@ function viewRegs(eventId, title) {
     window.__regRows = rows; window.__quickCandidate = null;
     var withEmail = rows.filter(function (r) { return r.email; }).length;
     var checkedIn = rows.filter(function (r) { return r.checkinAt; }).length;
-    var html = '<div class="d-flex justify-content-between align-items-center mb-1"><h6 class="mb-0">報名／簽到名單：' + esc(title) + '（' + rows.length + ' 人，已簽到 ' + checkedIn + ' 人）</h6>' +
-      '<div><button class="btn btn-sm btn-outline-dark me-1" data-ui-action="signInSheet">簽到表 (PDF)</button>' +
-      '<button class="btn btn-sm btn-outline-secondary" data-ui-action="closeEventRegs">關閉</button></div></div>';
-    html += '<div id="event-service-alerts" role="status"></div><div class="d-flex flex-wrap gap-2 mb-3"><button type="button" class="btn btn-primary" data-ui-action="openQuickEventCheckin">快速簽到</button><button type="button" class="btn btn-outline-primary" data-ui-action="syncEventResponses">同步表單回覆</button></div><div id="event-column-mapping" class="mb-3"></div>';
-    html += '<div class="card mb-2"><div class="card-body py-2" style="max-width:820px">' +
-      '<div class="fw-bold mb-1">發信給報名者（' + withEmail + ' 人有填 Email）</div>' +
-      '<input id="reg-subj" class="form-control form-control-sm mb-1" placeholder="主旨">' +
-      '<textarea id="reg-body" class="form-control form-control-sm mb-1" rows="4" placeholder="內文（可自由編輯）"></textarea>' +
-      '<button class="btn btn-sm btn-primary" data-ui-action="sendRegMail">寄送</button></div></div>';
+    var record = EDIT_RECORDS.event && EDIT_RECORDS.event[eventId];
+    var html = '<a href="/admin/?tab=events" class="btn btn-outline-secondary btn-sm mb-3">返回活動列表</a><h1 class="h4">'+esc(title)+'</h1><p class="text-muted">共 '+rows.length+' 人，已簽到 '+checkedIn+' 人</p><div class="d-flex flex-wrap gap-2 mb-3">'+editRecordButton('event',eventId,true)+(record ? '<button class="btn btn-outline-secondary" data-ui-action="copyEventLink" data-slug="'+esc(record.slug||eventId)+'">複製活動連結</button>' : '')+'<button class="btn btn-primary" data-ui-action="openQuickEventCheckin">快速簽到</button><button class="btn btn-outline-primary" data-ui-action="openEventMail">發信</button><button class="btn btn-outline-secondary" data-ui-action="syncEventResponses">同步名單</button><button class="btn btn-outline-secondary" data-ui-action="openEventMapping">欄位對應</button><button class="btn btn-outline-secondary" data-ui-action="signInSheet">簽到表 PDF</button>'+(record && record.checkinMode ? '<button class="btn btn-outline-secondary" data-ui-action="showCheckinQR" data-slug="'+esc(record.slug||eventId)+'" data-title="'+esc(title)+'">簽到 QR</button>' : '')+'<button class="btn btn-outline-danger" data-ui-action="delEv" data-id="'+esc(eventId)+'">刪除活動</button></div><div id="event-service-alerts" role="status"></div>';
     html += rows.length
       ? '<div class="admin-table-scroll"><table class="table table-sm table-striped align-middle"><thead><tr><th>#</th><th>姓名</th><th>學號</th><th>Email</th><th>系級</th><th>身份別</th><th>來源</th><th>簽到</th><th>備註</th><th>時間</th><th></th></tr></thead><tbody>' +
         rows.map(function (r, i) {
@@ -174,7 +169,6 @@ function viewRegs(eventId, title) {
         }).join('') + '</tbody></table></div>'
       : '<p class="text-muted">尚無人報名。</p>';
     document.getElementById('ev-regs').innerHTML = html;
-    loadEventColumnMapping();
     call('listServiceAlerts').then(function (alerts) { document.getElementById('event-service-alerts').textContent = alerts.length ? '服務警示：' + alerts.slice(0, 5).map(function(a) { return a.createdAt + ' ' + a.service + '：' + a.message; }).join('；') : ''; });
   });
 }
@@ -189,29 +183,20 @@ function delReg(id) { var ev = window.__regEvent; if (confirm('刪除此筆報�
 
 function syncEventResponses() { var ev = window.__regEvent; if (!ev) return; call('syncEventResponses', ev.id).then(function(r) { notify('同步完成，新增 ' + r.added + ' 人；略過空白或重複 ' + r.skipped + ' 筆'); viewRegs(ev.id, ev.title); }); }
 function manualEventCheckin(id) { var ev = window.__regEvent; if (!ev) return; call('checkinRegistration', ev.id, id).then(function(r) { notify(r.already ? r.name + ' 已簽到，未重複登記' : r.name + ' 簽到完成'); viewRegs(ev.id, ev.title); }); }
-function quickEventCheckin(event) {
-  if (event.key !== 'Enter' || event.repeat || event.isComposing) return;
-  event.preventDefault();
-  var input = event.currentTarget, value = input.value.trim().toLowerCase(), box = document.getElementById('quick-checkin-status');
-  if (input.disabled || !value) return;
-  var matches = (window.__regRows || []).filter(function(r) { return String(r.studentId || '').trim().toLowerCase() === value || String(r.name || '').trim().toLowerCase() === value; });
-  if (matches.length !== 1) { window.__quickCandidate = null; box.textContent = matches.length ? '姓名重複，請輸入學號或使用名單的簽到按鈕。' : '查無此人，請先同步表單回覆或確認輸入。'; return; }
-  var row = matches[0];
-  if (row.checkinAt) { box.textContent = row.name + ' 已簽到，無需重複。'; return; }
-  if (window.__quickCandidate !== row.id) { window.__quickCandidate = row.id; box.textContent = '確認：' + row.name + '（' + row.studentId + '），再按 Enter 簽到。'; return; }
-  input.disabled = true; window.__quickCandidate = null;
-  call('checkinRegistration', window.__regEvent.id, row.id).then(function() { row.checkinAt = new Date().toISOString(); box.textContent = row.name + ' 簽到完成'; input.value = ''; }).finally(function() { input.disabled = false; input.focus(); });
-}
-
 function openQuickEventCheckin() {
-  var input = document.getElementById('quick-checkin'); input.value = ''; input.disabled = false;
-  window.__quickCandidate = null; document.getElementById('quick-checkin-status').textContent = '';
-  input.oninput = function () { window.__quickCandidate = null; document.getElementById('quick-checkin-status').textContent = ''; };
-  input.onkeydown = quickEventCheckin;
-  var modal = document.getElementById('quickEventCheckinModal');
-  modal.addEventListener('shown.bs.modal', function() { input.focus(); }, { once: true });
-  showModal('quickEventCheckinModal');
+  var input=document.getElementById('quick-checkin'), list=document.getElementById('quick-checkin-candidates'), status=document.getElementById('quick-checkin-status');
+  var button=document.getElementById('quick-checkin-confirm');input.value='';input.disabled=false;status.textContent='';button.disabled=true;
+  var picker=createCandidatePicker({input:input,list:list,getItems:function(query){query=query.trim().toLowerCase();return query ? (window.__regRows||[]).filter(function(r){return String(r.name||'').toLowerCase().includes(query)||String(r.studentId||'').toLowerCase().includes(query);}):[];},
+    label:function(r){return (r.name||'未填姓名')+'（'+(r.studentId||'無學號')+'）'+(r.checkinAt?' 已簽到':' 未簽到');},
+    onSelect:function(r){button.disabled=!r||!!r.checkinAt;status.textContent=r?(r.name+' '+(r.studentId||'')+(r.checkinAt?' 已簽到，無需重複。':'：再按 Enter 或按下確認簽到。')):'';},
+    onConfirm:commit});
+  function commit(row){if(!row||row.checkinAt||input.disabled)return;input.disabled=true;button.disabled=true;
+    call('checkinRegistration',window.__regEvent.id,row.id).then(function(result){row.checkinAt=new Date().toISOString();picker.clear();status.textContent=row.name+(result.already?' 已簽到':' 簽到完成');}).finally(function(){input.disabled=false;button.disabled=!picker.selected() || !!picker.selected().checkinAt;input.focus();});}
+  button.onclick=function(){commit(picker.selected());};
+  var modal=document.getElementById('quickEventCheckinModal');modal.addEventListener('shown.bs.modal',function(){input.focus();},{once:true});showModal('quickEventCheckinModal');
 }
+function openEventMail(){document.getElementById('reg-mail-count').textContent=(window.__regRows||[]).filter(function(r){return r.email;}).length+' 人有填 Email；密件副本仍計入收件人額度。';showModal('eventMailModal');}
+function openEventMapping(){showModal('eventMappingModal');loadEventColumnMapping();}
 function loadEventColumnMapping(tab) {
   var eventId = window.__regEvent.id;
   call('getEventResponseColumns', eventId, tab || '').then(function(data) {

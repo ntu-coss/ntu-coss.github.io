@@ -63,14 +63,17 @@ function useToken(token) {
     enterApp();
     return call('getMe').then(function (p) {
       MEPROF = p || {};
+      resetStudentLookup();
       refreshServiceAlerts();
       if (!window.__serviceAlertsTimer) window.__serviceAlertsTimer = setInterval(refreshServiceAlerts, 120000);
       var g = ((MEPROF.title || '') + ' ' + (MEPROF.name || '')).trim();
       document.getElementById('greet').textContent = g || MEPROF.email || '管理員';
       resetAnnounce(); resetEv();
+      document.querySelectorAll('[data-service-account]').forEach(function(e){e.textContent=MEPROF.serviceAccountEmail || '目前無法取得，請聯絡系統管理員';});
       applyOwnerUI();
       applyPagePerms(MEPROF.pages);
-      goTab('#t-dashboard');
+      var params = new URLSearchParams(location.search);
+      goTab(params.has('event') || params.get('tab') === 'events' ? '#t-events' : '#t-dashboard');
     }).catch(function () { goTab('#t-dashboard'); });
   }).catch(function (e) {
     TOKEN = null; clearToken();
@@ -82,6 +85,7 @@ function onSignIn(resp) {
   useToken(resp.credential);
 }
 function signOut() {
+  resetStudentLookup();
   TOKEN = null; clearToken();
   try { google.accounts.id.disableAutoSelect(); } catch (e) {}
   showGate('已登出。');
@@ -253,6 +257,10 @@ document.addEventListener('click', function (event) {
     delEv: function () { delEv(actionTarget.dataset.id); },
     signInSheet: function () { signInSheet(); },
     closeEventRegs: function () { document.getElementById('ev-regs').innerHTML = ''; },
+    openReleaseNotes: function () { openReleaseNotes(); },
+    openEventMail: function () { openEventMail(); },
+    openEventMapping: function () { openEventMapping(); },
+    copyServiceAccount: function () { if (MEPROF && MEPROF.serviceAccountEmail) navigator.clipboard.writeText(MEPROF.serviceAccountEmail).then(function(){notify('已複製服務帳戶');}); },
     openQuickEventCheckin: function () { openQuickEventCheckin(); },
     saveEventColumnMapping: function () { saveEventColumnMapping(); },
     syncEventResponses: function () { syncEventResponses(); },

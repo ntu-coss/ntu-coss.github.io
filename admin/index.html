@@ -64,7 +64,7 @@
     </div>
     <div class="offcanvas-body p-0 d-flex flex-column">
       <button class="dash-home-btn" data-tab="#t-dashboard"><i class="bi bi-grid-1x2 me-2"></i>後台首頁</button>
-      <button id="staging-updates-nav" class="dash-home-btn d-none" data-tab="#t-updates"><i class="bi bi-journal-text me-2"></i>測試區更新紀錄</button>
+      <button class="dash-home-btn" data-tab="#t-quicklookup">快速查詢</button>
       <div class="accordion accordion-flush flex-grow-1" id="navacc">
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-act"><i class="bi bi-calendar-event me-2"></i>活動管理</button></h2>
@@ -145,7 +145,7 @@
     <div class="tab-pane fade" id="t-updates">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0"><i class="bi bi-journal-text me-1"></i>測試區更新紀錄</h5>
-        <a class="btn btn-sm btn-outline-secondary" href="/STAGING_UPDATES.md" target="_blank" rel="noreferrer"><i class="bi bi-file-earmark-text me-1"></i>開啟文字版</a>
+
       </div>
       <div id="staging-updates-page" class="staging-update-markdown">載入中……</div>
     </div>
@@ -170,6 +170,7 @@
       <button class="btn btn-primary btn-sm mb-3" onclick="saveHero()">儲存橫幅設定</button>
     </div>
 
+    <div class="tab-pane fade" id="t-quicklookup"><h1 class="h4">學生快速查詢</h1><p class="text-muted">只顯示您有權限查看的活動、空間、設備及院櫃紀錄。輸入後按查詢，再選取候選人。活動資料以最後同步名單為準；院櫃已清除的歷史資料不會出現在結果。</p><label for="student-lookup-query" class="form-label">姓名或學號</label><div class="d-flex flex-wrap gap-2 mb-3"><input id="student-lookup-query" class="form-control" style="max-width:480px" autocomplete="off"><button type="button" id="student-lookup-search" class="btn btn-primary">查詢</button><button type="button" id="student-lookup-refresh" class="btn btn-outline-secondary">重新讀取最新資料</button></div><div id="student-lookup-status" role="status" class="small text-muted mb-2"></div><div id="student-lookup-candidates" class="list-group" style="max-height:320px;overflow:auto" hidden></div><div id="student-lookup-details" class="table-responsive"></div></div>
     <!-- 活動（首頁輪播 + 報名） -->
     <div class="tab-pane fade" id="t-events">
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -768,7 +769,7 @@
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">Details (English, Markdown, optional)</label><textarea id="ev-body-en" class="form-control" rows="5"></textarea><div class="form-text">英文留空時，英文版網站會回退顯示中文。</div></div>
             <div class="col-12"><h6 class="border-bottom pb-2 mt-2">報名表單</h6></div>
             <div class="col-12"><label class="form-label" for="ev-formUrl">Google 表單連結</label><input id="ev-formUrl" type="url" class="form-control" /></div>
-            <div class="col-12"><label class="form-label" for="ev-responseSheetUrl">表單回覆試算表連結</label><input id="ev-responseSheetUrl" type="url" class="form-control" /><div class="form-text">欄位對應請在「報名／簽到名單」中選擇。試算表須共用給系統服務帳戶。</div></div>
+            <div class="col-12"><label class="form-label" for="ev-responseSheetUrl">表單回覆試算表連結</label><input id="ev-responseSheetUrl" type="url" class="form-control" /><div class="form-text">欄位對應請在「報名／簽到名單」中選擇。請共用為檢視者給：<code data-service-account></code> <button type="button" class="btn btn-link btn-sm" data-ui-action="copyServiceAccount">複製帳號</button></div></div>
             <div class="col-12"><h6 class="border-bottom pb-2 mt-2">發布與簽到</h6></div>
             <div class="col-12 d-flex flex-wrap gap-4">
               <div class="form-check"><input id="ev-published" type="checkbox" class="form-check-input" checked /><label class="form-check-label" for="ev-published">發布（顯示於首頁）</label></div>
@@ -795,7 +796,10 @@
     </div>
   </div>
 
-  <div class="modal fade" id="quickEventCheckinModal" tabindex="-1" aria-labelledby="quick-event-title"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quick-event-title">活動快速簽到</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="關閉"></button></div><div class="modal-body"><label for="quick-checkin" class="form-label">輸入完整姓名或學號</label><input id="quick-checkin" class="form-control form-control-lg" autocomplete="off"><p class="form-text">第一次 Enter 確認對象，第二次 Enter 完成簽到。</p><div id="quick-checkin-status" role="status" aria-live="polite"></div></div></div></div></div>
+  <div class="modal fade" id="quickEventCheckinModal" tabindex="-1" aria-labelledby="quick-event-title"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quick-event-title">活動快速簽到</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="關閉"></button></div><div class="modal-body"><label for="quick-checkin" class="form-label">輸入完整姓名或學號</label><input id="quick-checkin" class="form-control form-control-lg" autocomplete="off"><p class="form-text">輸入部分姓名或學號查找；↑／↓ 移動，Enter 選取，再按 Enter 簽到。也可用滑鼠選取並按確認簽到。候選清單最多顯示 30 位，請縮小輸入以找到其他人。</p><div id="quick-checkin-candidates" class="list-group mb-3" style="max-height:280px;overflow:auto" hidden></div><button id="quick-checkin-confirm" type="button" class="btn btn-primary mb-3" disabled>確認簽到</button><div id="quick-checkin-status" role="status" aria-live="polite"></div></div></div></div></div>
+<div class="modal fade" id="eventMailModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">發信給報名者</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button></div><div class="modal-body"><p id="reg-mail-count" class="text-muted"></p><label for="reg-subj" class="form-label">主旨</label><input id="reg-subj" class="form-control mb-3"><label for="reg-body" class="form-label">內文</label><textarea id="reg-body" class="form-control mb-3" rows="7"></textarea><button class="btn btn-primary" data-ui-action="sendRegMail">寄送</button></div></div></div></div>
+<div class="modal fade" id="eventMappingModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">試算表欄位對應</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button></div><div class="modal-body"><div id="event-column-mapping"></div></div></div></div></div>
+<div class="modal fade" id="releaseNotesModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">網站更新紀錄</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="關閉"></button></div><div class="modal-body" id="release-notes-content"></div></div></div></div>
   <!-- 簽到 QR Code 視窗 -->
   <div class="modal fade" id="checkinQRModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -977,7 +981,7 @@
         <a href="https://www.instagram.com/ntu.sssa/" target="_blank" rel="noreferrer" class="text-decoration-none">Instagram</a>
       </div>
       <div class="d-flex justify-content-between flex-wrap">
-        <span class="text-muted">© 2026 臺大社科院學生會</span>
+        <span class="text-muted">© 2026 臺大社科院學生會</span><button type="button" class="btn btn-link btn-sm" data-ui-action="openReleaseNotes">更新紀錄</button>
         <span class="text-muted">Ver: <span data-build-version>讀取中</span></span>
       </div>
     </div>
@@ -988,6 +992,8 @@
   <script defer src="/admin/js/database.js"></script>
   <script defer src="/admin/js/facilities.js"></script>
   <script defer src="/admin/js/system.js"></script>
+  <script defer src="/admin/js/candidate-picker.js"></script>
+  <script defer src="/admin/js/student-lookup.js"></script>
   <script defer src="/admin/js/events.js"></script>
   <script defer src="/admin/js/documents.js"></script>
   <script defer src="/admin/js/app.js"></script>

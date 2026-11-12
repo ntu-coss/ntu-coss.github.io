@@ -5,6 +5,7 @@ function runTabLoad(t) {
   if (t === '#t-updates') loadStagingUpdatesPage();
   if (t === '#t-home') loadHero();
   if (t === '#t-announce') loadAnnounce();
+  if (t === '#t-quicklookup') loadStudentLookup();
   if (t === '#t-events') loadEvents();
   if (t === '#t-roster') loadSettings();
   if (t === '#t-gongwen') loadGongwen();

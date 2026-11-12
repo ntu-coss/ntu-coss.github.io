@@ -28,7 +28,7 @@ function loadVenueAll() {
       }).join('') + '</tbody></table>' : '<p class="text-muted">無紀錄。</p>';
   });
 }
-function delB(id) { if (confirm('刪除此預約？（不會刪除行事曆事件）')) call('deleteVenueBooking', id).then(function () { loadVenueAll(); }); }
+function delB(id) { if (confirm('確定刪除此預約？若有對應的行事曆事件，也會一併刪除。')) call('deleteVenueBooking', id).then(function () { loadVenueAll(); }); }
 function resetVenueBooking(id) {
   var reason = prompt('請輸入退回待審核的原因（必填，僅供內部紀錄）：');
   if (reason === null) return;

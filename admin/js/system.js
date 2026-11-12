@@ -91,6 +91,7 @@ function applyPagePerms(pages) {
   var all = pages === 'all' || isOwner();
   document.querySelectorAll('#sidebar [data-tab]').forEach(function (b) {
     if (b.id === 'tab-audit-li' || b.id === 'tab-admins-li') return; // 由 applyOwnerUI 控制
+    if (pageOf(b) === 'quicklookup') { b.classList.toggle('d-none', !(all || ['events','venue','equipment','locker'].some(function(p){return Array.isArray(pages) && pages.indexOf(p)!==-1;}))); return; }
     if (pageOf(b) === 'dashboard') return; // 後台首頁永遠顯示
     if (pageOf(b) === 'updates') { b.classList.toggle('d-none', !IS_STAGING); return; }
     var ok = all || (Array.isArray(pages) && pages.indexOf(pageOf(b)) !== -1);
@@ -109,7 +110,6 @@ function canPage(p) {
 }
 // ---------- 後台首頁（總覽） ----------
 var DASH_CARDS = [
-  { tab: '#t-updates', page: 'updates', icon: 'bi-journal-text', color: '#355070', title: '測試區更新紀錄', desc: '本次調整內容與使用方式' },
   { tab: '#t-events', page: 'events', icon: 'bi-calendar-event', color: '#e76f51', title: '活動管理', desc: '首頁輪播、報名、簽到、發信' },
   { tab: '#t-announce', page: 'announce', icon: 'bi-megaphone', color: '#2a9d8f', title: '公告', desc: '發佈與編輯公告' },
   { tab: '#t-calendar', page: 'calendar', icon: 'bi-calendar3', color: '#457b9d', title: '行事曆', desc: '內嵌 Google 行事曆' },
@@ -169,7 +169,7 @@ function loadDashNotice() {
       box.innerHTML = '';
     });
     box.appendChild(el);
-  }).catch(function () {}).finally(function () { loadStagingUpdateNotice(box); });
+  }).catch(function () {});
 }
 function stagingMarkdownHtml(markdown) {
   var html = '', list = '';
@@ -194,16 +194,13 @@ function stagingMarkdownHtml(markdown) {
 }
 function loadStagingUpdateNotice(box) {
   if (!IS_STAGING || !box) return;
-  fetch('/STAGING_UPDATES.md', { cache: 'no-store' }).then(function (response) {
-    if (!response.ok) throw new Error('updates unavailable');
-    return response.text();
-  }).then(function (markdown) {
+  call('getReleaseNotes', true).then(function (markdown) {
     var el = document.createElement('div');
     el.className = 'dash-notice dash-notice--info staging-update-notice';
     el.innerHTML = '<div class="dn-title"><i class="bi bi-journal-text me-1" aria-hidden="true"></i>測試區更新紀錄</div>' +
       '<p class="mb-2">本次調整內容及使用方式整理如下。</p>' +
       '<details><summary class="fw-semibold">展開完整更新內容</summary><div class="staging-update-markdown mt-3">' + stagingMarkdownHtml(markdown) + '</div></details>' +
-      '<a class="btn btn-sm btn-outline-secondary mt-3" href="/STAGING_UPDATES.md" target="_blank" rel="noreferrer"><i class="bi bi-file-earmark-text me-1"></i>開啟文字版</a>';
+      '';
     box.appendChild(el);
   }).catch(function () {});
 }
@@ -212,13 +209,10 @@ function loadStagingUpdatesPage() {
   if (!box) return;
   if (!IS_STAGING) { box.innerHTML = '<p class="text-muted mb-0">更新紀錄只在測試區後台顯示。</p>'; return; }
   box.innerHTML = '<p class="text-muted mb-0">載入中……</p>';
-  fetch('/STAGING_UPDATES.md', { cache: 'no-store' }).then(function (response) {
-    if (!response.ok) throw new Error('updates unavailable');
-    return response.text();
-  }).then(function (markdown) {
+  call('getReleaseNotes', true).then(function (markdown) {
     box.innerHTML = stagingMarkdownHtml(markdown);
   }).catch(function () {
-    box.innerHTML = '<div class="alert alert-warning mb-0">暫時無法載入更新紀錄，請使用右上角「開啟文字版」。</div>';
+    box.innerHTML = '<div class="alert alert-warning mb-0">暫時無法載入更新紀錄，請稍後重試。</div>';
   });
 }
 function saveSysNotice() {
@@ -437,4 +431,9 @@ function openPageText(key) {
 function savePageText() {
   var key = document.getElementById('pt-key').value;
   call('saveSetting', key, document.getElementById('pt-value').value).then(function () { hideModal('pageTextModal'); notify('已儲存'); loadPageTexts(); });
+}
+
+function openReleaseNotes() {
+  var box=document.getElementById('release-notes-content');box.textContent='載入中…';showModal('releaseNotesModal');
+  call('getReleaseNotes',false).then(function(markdown){box.innerHTML=stagingMarkdownHtml(markdown);}).catch(function(){box.textContent='無法取得更新紀錄，請確認登入狀態。';});
 }
