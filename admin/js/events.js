@@ -62,11 +62,8 @@ function evObj() {
     slug: document.getElementById('ev-slug').value,
     formUrl: document.getElementById('ev-formUrl').value,
     responseSheetUrl: document.getElementById('ev-responseSheetUrl').value,
-    responseSheetTab: document.getElementById('ev-responseSheetTab').value,
-    responseNameColumn: document.getElementById('ev-responseNameColumn').value,
-    responseStudentIdColumn: document.getElementById('ev-responseStudentIdColumn').value,
-    responseEmailColumn: document.getElementById('ev-responseEmailColumn').value,
-    responseDeptColumn: document.getElementById('ev-responseDeptColumn').value,
+    walkinEnabled: document.getElementById('ev-walkinEnabled').checked,
+    walkinFields: Array.from(document.querySelectorAll('.ev-walkin-field:checked')).map(function(e) { return e.value; }),
     checkinMode: document.getElementById('ev-checkin').value,
   };
 }
@@ -93,14 +90,12 @@ function editEv(r) {
   document.getElementById('ev-from').value = r.publishFrom || '';
   document.getElementById('ev-until').value = r.publishUntil || '';
   document.getElementById('ev-slug').value = r.slug || '';
-  document.getElementById('ev-checkin').value = r.checkinMode || '';
+  document.getElementById('ev-checkin').value = r.checkinMode ? 'match' : '';
+  document.getElementById('ev-walkinEnabled').checked = r.walkinEnabled == null || r.walkinEnabled === '' ? r.checkinMode === 'walkin' : String(r.walkinEnabled) === 'true';
+  var fields; try { fields = JSON.parse(r.walkinFields); } catch(e) {}
+  document.querySelectorAll('.ev-walkin-field').forEach(function(e) { e.checked = !Array.isArray(fields) || fields.indexOf(e.value) !== -1; });
   document.getElementById('ev-formUrl').value = r.formUrl || '';
   document.getElementById('ev-responseSheetUrl').value = r.responseSheetUrl || '';
-  document.getElementById('ev-responseSheetTab').value = r.responseSheetTab || '';
-  document.getElementById('ev-responseNameColumn').value = r.responseNameColumn || '';
-  document.getElementById('ev-responseStudentIdColumn').value = r.responseStudentIdColumn || '';
-  document.getElementById('ev-responseEmailColumn').value = r.responseEmailColumn || '';
-  document.getElementById('ev-responseDeptColumn').value = r.responseDeptColumn || '';
 
 }
 function resetEv() {
@@ -110,13 +105,10 @@ function resetEv() {
   document.getElementById('ev-signup').checked = false;
   document.getElementById('ev-signuproster').checked = false;
   document.getElementById('ev-checkin').value = '';
+  document.getElementById('ev-walkinEnabled').checked = false;
+  document.querySelectorAll('.ev-walkin-field').forEach(function(e) { e.checked = true; });
   document.getElementById('ev-formUrl').value = '';
   document.getElementById('ev-responseSheetUrl').value = '';
-  document.getElementById('ev-responseSheetTab').value = '';
-  document.getElementById('ev-responseNameColumn').value = '';
-  document.getElementById('ev-responseStudentIdColumn').value = '';
-  document.getElementById('ev-responseEmailColumn').value = '';
-  document.getElementById('ev-responseDeptColumn').value = '';
 
   document.getElementById('ev-atitle').value = (MEPROF && MEPROF.title) || '';
   document.getElementById('ev-aname').value = (MEPROF && MEPROF.name) || '';
@@ -167,23 +159,22 @@ function viewRegs(eventId, title) {
     var html = '<div class="d-flex justify-content-between align-items-center mb-1"><h6 class="mb-0">報名／簽到名單：' + esc(title) + '（' + rows.length + ' 人，已簽到 ' + checkedIn + ' 人）</h6>' +
       '<div><button class="btn btn-sm btn-outline-dark me-1" data-ui-action="signInSheet">簽到表 (PDF)</button>' +
       '<button class="btn btn-sm btn-outline-secondary" data-ui-action="closeEventRegs">關閉</button></div></div>';
-    html += '<div id="event-service-alerts" role="status"></div><div class="card mb-2"><div class="card-body"><button type="button" class="btn btn-outline-primary mb-2" data-ui-action="syncEventResponses">同步表單回覆</button><label for="quick-checkin" class="form-label d-block">快速簽到：輸入完整姓名或學號，按 Enter 確認，再按 Enter 簽到</label><input id="quick-checkin" class="form-control" autocomplete="off"><div id="quick-checkin-status" class="mt-2" role="status"></div></div></div>';
+    html += '<div id="event-service-alerts" role="status"></div><div class="d-flex flex-wrap gap-2 mb-3"><button type="button" class="btn btn-primary" data-ui-action="openQuickEventCheckin">快速簽到</button><button type="button" class="btn btn-outline-primary" data-ui-action="syncEventResponses">同步表單回覆</button></div><div id="event-column-mapping" class="mb-3"></div>';
     html += '<div class="card mb-2"><div class="card-body py-2" style="max-width:820px">' +
       '<div class="fw-bold mb-1">發信給報名者（' + withEmail + ' 人有填 Email）</div>' +
       '<input id="reg-subj" class="form-control form-control-sm mb-1" placeholder="主旨">' +
       '<textarea id="reg-body" class="form-control form-control-sm mb-1" rows="4" placeholder="內文（可自由編輯）"></textarea>' +
       '<button class="btn btn-sm btn-primary" data-ui-action="sendRegMail">寄送</button></div></div>';
     html += rows.length
-      ? '<div class="admin-table-scroll"><table class="table table-sm table-striped align-middle"><thead><tr><th>#</th><th>姓名</th><th>學號</th><th>Email</th><th>系級</th><th>來源</th><th>簽到</th><th>備註</th><th>時間</th><th></th></tr></thead><tbody>' +
+      ? '<div class="admin-table-scroll"><table class="table table-sm table-striped align-middle"><thead><tr><th>#</th><th>姓名</th><th>學號</th><th>Email</th><th>系級</th><th>身份別</th><th>來源</th><th>簽到</th><th>備註</th><th>時間</th><th></th></tr></thead><tbody>' +
         rows.map(function (r, i) {
           var ci = r.checkinAt ? '<span class="badge bg-success"><i class="bi bi-check-lg me-1" aria-hidden="true"></i>' + fmt(r.checkinAt) + '</span>' : '<span class="text-muted small">—</span>';
-          return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.studentId) + '</td><td class="small">' + esc(r.email) + '</td><td>' + esc(r.dept) + '</td><td>' + esc(r.source) + '</td><td class="small text-nowrap">' + ci + '</td><td class="small">' + esc(r.note) + '</td><td class="small text-nowrap">' + fmt(r.createdAt) + '</td>' +
+          return '<tr><td>' + (i + 1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.studentId) + '</td><td class="small">' + esc(r.email) + '</td><td>' + esc(r.dept) + '</td><td>' + esc(({student:'學生',staff:'教職員',public:'社會人士'})[r.identity] || '') + '</td><td>' + esc(r.source) + '</td><td class="small text-nowrap">' + ci + '</td><td class="small">' + esc(r.note) + '</td><td class="small text-nowrap">' + fmt(r.createdAt) + '</td>' +
             '<td>' + (!r.checkinAt ? '<button class="btn btn-sm btn-outline-success me-1" data-ui-action="manualEventCheckin" data-id="' + esc(r.id) + '">簽到</button>' : '') + '<button class="btn btn-sm btn-outline-danger" data-ui-action="delReg" data-id="' + esc(r.id) + '">刪除</button></td></tr>';
         }).join('') + '</tbody></table></div>'
       : '<p class="text-muted">尚無人報名。</p>';
     document.getElementById('ev-regs').innerHTML = html;
-    document.getElementById('quick-checkin').addEventListener('input', function () { window.__quickCandidate = null; document.getElementById('quick-checkin-status').textContent = ''; });
-    document.getElementById('quick-checkin').addEventListener('keydown', quickEventCheckin);
+    loadEventColumnMapping();
     call('listServiceAlerts').then(function (alerts) { document.getElementById('event-service-alerts').textContent = alerts.length ? '服務警示：' + alerts.slice(0, 5).map(function(a) { return a.createdAt + ' ' + a.service + '：' + a.message; }).join('；') : ''; });
   });
 }
@@ -210,4 +201,37 @@ function quickEventCheckin(event) {
   if (window.__quickCandidate !== row.id) { window.__quickCandidate = row.id; box.textContent = '確認：' + row.name + '（' + row.studentId + '），再按 Enter 簽到。'; return; }
   input.disabled = true; window.__quickCandidate = null;
   call('checkinRegistration', window.__regEvent.id, row.id).then(function() { row.checkinAt = new Date().toISOString(); box.textContent = row.name + ' 簽到完成'; input.value = ''; }).finally(function() { input.disabled = false; input.focus(); });
+}
+
+function openQuickEventCheckin() {
+  var input = document.getElementById('quick-checkin'); input.value = ''; input.disabled = false;
+  window.__quickCandidate = null; document.getElementById('quick-checkin-status').textContent = '';
+  input.oninput = function () { window.__quickCandidate = null; document.getElementById('quick-checkin-status').textContent = ''; };
+  input.onkeydown = quickEventCheckin;
+  var modal = document.getElementById('quickEventCheckinModal');
+  modal.addEventListener('shown.bs.modal', function() { input.focus(); }, { once: true });
+  showModal('quickEventCheckinModal');
+}
+function loadEventColumnMapping(tab) {
+  var eventId = window.__regEvent.id;
+  call('getEventResponseColumns', eventId, tab || '').then(function(data) {
+    var box = document.getElementById('event-column-mapping');
+    if (!box || window.__regEvent.id !== eventId) return;
+    if (!data.tabs.length) { box.innerHTML = '<p class="text-muted small">尚未設定回覆試算表連結，可在編輯活動中填寫。</p>'; return; }
+    var labels = {responseNameColumn:'姓名',responseStudentIdColumn:'學號',responseEmailColumn:'Email',responseDeptColumn:'系級'};
+    var defaults = {responseNameColumn:'姓名',responseStudentIdColumn:'學號',responseEmailColumn:'電子郵件地址',responseDeptColumn:'系級'};
+    var html = '<div class="card"><div class="card-body"><h6>試算表欄位對應</h6><div class="row g-2"><div class="col-12"><label for="event-response-tab" class="form-label">回覆工作表</label><select id="event-response-tab" class="form-select">' + data.tabs.map(function(t) { return '<option'+(t === data.tab ? ' selected' : '')+'>'+esc(t)+'</option>'; }).join('') + '</select></div>';
+    Object.keys(labels).forEach(function(key) {
+      var selected = data.event[key] == null ? defaults[key] : data.event[key];
+      html += '<div class="col-6 col-lg-3"><label for="mapping-'+key+'" class="form-label">'+labels[key]+'</label><select id="mapping-'+key+'" class="form-select"><option value="">'+(key === 'responseNameColumn' ? '請選擇' : '不匯入')+'</option>'+data.headers.filter(Boolean).map(function(h) {return '<option value="'+esc(h)+'"'+(h === selected ? ' selected' : '')+'>'+esc(h)+'</option>';}).join('')+'</select></div>';
+    });
+    html += '</div><button type="button" class="btn btn-outline-primary mt-3" data-ui-action="saveEventColumnMapping">儲存欄位對應</button><p class="form-text mb-0">儲存後按「同步表單回覆」。姓名必須對應，其他欄位可不匯入。</p></div></div>';
+    box.innerHTML = html;
+    document.getElementById('event-response-tab').onchange = function() { loadEventColumnMapping(this.value); };
+  }).catch(function() { var box=document.getElementById('event-column-mapping'); if(box)box.textContent='無法載入回覆試算表欄位，請確認共用權限及連結。'; });
+}
+function saveEventColumnMapping() {
+  var config = { responseSheetTab: document.getElementById('event-response-tab').value };
+  ['responseNameColumn','responseStudentIdColumn','responseEmailColumn','responseDeptColumn'].forEach(function(key) { config[key] = document.getElementById('mapping-'+key).value; });
+  call('saveEventResponseColumns', window.__regEvent.id, config).then(function() { notify('欄位對應已儲存'); });
 }

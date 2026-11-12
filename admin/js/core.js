@@ -253,6 +253,8 @@ document.addEventListener('click', function (event) {
     delEv: function () { delEv(actionTarget.dataset.id); },
     signInSheet: function () { signInSheet(); },
     closeEventRegs: function () { document.getElementById('ev-regs').innerHTML = ''; },
+    openQuickEventCheckin: function () { openQuickEventCheckin(); },
+    saveEventColumnMapping: function () { saveEventColumnMapping(); },
     syncEventResponses: function () { syncEventResponses(); },
     manualEventCheckin: function () { manualEventCheckin(actionTarget.dataset.id); },
     sendRegMail: function () { sendRegMail(); },

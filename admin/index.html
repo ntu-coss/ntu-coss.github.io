@@ -750,6 +750,7 @@
         <div class="modal-body">
           <input type="hidden" id="ev-id" />
           <div class="row g-3">
+            <div class="col-12"><h6 class="border-bottom pb-2">活動資訊</h6></div>
             <div class="col-md-7"><label class="form-label mb-1 small fw-semibold">標題（中文）</label><input id="ev-title" class="form-control" placeholder="標題" /></div>
             <div class="col-6 col-md-3"><label class="form-label mb-1 small fw-semibold">日期</label><input id="ev-date" type="date" class="form-control" /></div>
             <div class="col-6 col-md-2"><label class="form-label mb-1 small fw-semibold">排序</label><input id="ev-order" type="number" class="form-control" value="0" /></div>
@@ -761,22 +762,28 @@
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">上架日期（選填）</label><input id="ev-from" type="date" class="form-control" /><div class="form-text">留空＝立即上架</div></div>
             <div class="col-6"><label class="form-label mb-1 small fw-semibold">下架日期（選填）</label><input id="ev-until" type="date" class="form-control" /><div class="form-text">當天仍顯示，隔天自動下架；留空＝不下架</div></div>
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">詳細內容（中文，支援 Markdown）</label><textarea id="ev-body" class="form-control" rows="5"></textarea></div>
+            <div class="col-12"><h6 class="border-bottom pb-2 mt-2">English content</h6></div>
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">Title (English, optional)</label><input id="ev-title-en" class="form-control" /></div>
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">Card summary (English, optional)</label><input id="ev-summary-en" class="form-control" /></div>
             <div class="col-12"><label class="form-label mb-1 small fw-semibold">Details (English, Markdown, optional)</label><textarea id="ev-body-en" class="form-control" rows="5"></textarea><div class="form-text">英文留空時，英文版網站會回退顯示中文。</div></div>
+            <div class="col-12"><h6 class="border-bottom pb-2 mt-2">報名表單</h6></div>
+            <div class="col-12"><label class="form-label" for="ev-formUrl">Google 表單連結</label><input id="ev-formUrl" type="url" class="form-control" /></div>
+            <div class="col-12"><label class="form-label" for="ev-responseSheetUrl">表單回覆試算表連結</label><input id="ev-responseSheetUrl" type="url" class="form-control" /><div class="form-text">欄位對應請在「報名／簽到名單」中選擇。試算表須共用給系統服務帳戶。</div></div>
+            <div class="col-12"><h6 class="border-bottom pb-2 mt-2">發布與簽到</h6></div>
             <div class="col-12 d-flex flex-wrap gap-4">
               <div class="form-check"><input id="ev-published" type="checkbox" class="form-check-input" checked /><label class="form-check-label" for="ev-published">發布（顯示於首頁）</label></div>
-<div class="mb-2"><label class="form-label" for="ev-formUrl">Google 表單連結</label><input id="ev-formUrl" class="form-control" /></div><div class="mb-2"><label class="form-label" for="ev-responseSheetUrl">表單回覆試算表連結（請共用給系統服務帳戶）</label><input id="ev-responseSheetUrl" class="form-control" /></div><div class="mb-2"><label class="form-label" for="ev-responseSheetTab">回覆工作表名稱</label><input id="ev-responseSheetTab" class="form-control" /></div><div class="mb-2"><label class="form-label" for="ev-responseNameColumn">姓名欄位標題（預設：姓名）</label><input id="ev-responseNameColumn" class="form-control" /></div><div class="mb-2"><label class="form-label" for="ev-responseStudentIdColumn">學號欄位標題（預設：學號）</label><input id="ev-responseStudentIdColumn" class="form-control" /></div><div class="mb-2"><label class="form-label" for="ev-responseEmailColumn">信箱欄位標題（預設：電子郵件地址）</label><input id="ev-responseEmailColumn" class="form-control" /></div><div class="mb-2"><label class="form-label" for="ev-responseDeptColumn">系級欄位標題（預設：系級）</label><input id="ev-responseDeptColumn" class="form-control" /></div><p class="small text-muted">使用 Google 表單時停用本站原報名表。試算表以學號去除重複，名單同步不覆蓋簽到紀錄。</p>              <div class="form-check"><input id="ev-signup" type="checkbox" class="form-check-input" /><label class="form-check-label" for="ev-signup">開放報名</label></div>
+              <div class="form-check"><input id="ev-signup" type="checkbox" class="form-check-input" /><label class="form-check-label" for="ev-signup">開放報名</label></div>
               <div class="form-check"><input id="ev-signuproster" type="checkbox" class="form-check-input" /><label class="form-check-label" for="ev-signuproster">報名須檢核學生名單</label></div>
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label mb-1 small fw-semibold">現場 QR 簽到</label>
               <select id="ev-checkin" class="form-select">
                 <option value="">關閉（不開放簽到）</option>
-                <option value="walkin">現場填表簽到（不分報名與否）</option>
-                <option value="match">對照報名名單（未報名者現場補登）</option>
+                <option value="match">開放簽到</option>
               </select>
               <div class="form-text">開啟後，活動列表會出現「簽到 QR」按鈕供現場張貼掃描。</div>
+            </div><div class="col-12 col-md-6"><div class="form-check form-switch mt-4"><input id="ev-walkinEnabled" class="form-check-input" type="checkbox"><label class="form-check-label" for="ev-walkinEnabled">開放現場報名</label></div></div>
+            <div class="col-12"><label class="form-label">現場報名顯示欄位</label><div class="d-flex flex-wrap gap-3"><div class="form-check"><input class="form-check-input ev-walkin-field" id="ev-walkin-name" value="name" type="checkbox" checked><label class="form-check-label" for="ev-walkin-name">姓名</label></div><div class="form-check"><input class="form-check-input ev-walkin-field" id="ev-walkin-identity" value="identity" type="checkbox" checked><label class="form-check-label" for="ev-walkin-identity">身份別</label></div><div class="form-check"><input class="form-check-input ev-walkin-field" id="ev-walkin-studentId" value="studentId" type="checkbox" checked><label class="form-check-label" for="ev-walkin-studentId">學號</label></div><div class="form-check"><input class="form-check-input ev-walkin-field" id="ev-walkin-email" value="email" type="checkbox" checked><label class="form-check-label" for="ev-walkin-email">Email</label></div></div><div class="form-text">姓名與身份別若顯示則須填寫；學號及 Email 可留空。不顯示的欄位不會收集。</div>
             </div>
           </div>
         </div>
@@ -788,6 +795,7 @@
     </div>
   </div>
 
+  <div class="modal fade" id="quickEventCheckinModal" tabindex="-1" aria-labelledby="quick-event-title"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quick-event-title">活動快速簽到</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="關閉"></button></div><div class="modal-body"><label for="quick-checkin" class="form-label">輸入完整姓名或學號</label><input id="quick-checkin" class="form-control form-control-lg" autocomplete="off"><p class="form-text">第一次 Enter 確認對象，第二次 Enter 完成簽到。</p><div id="quick-checkin-status" role="status" aria-live="polite"></div></div></div></div></div>
   <!-- 簽到 QR Code 視窗 -->
   <div class="modal fade" id="checkinQRModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
