@@ -97,9 +97,7 @@ function applyPagePerms(pages) {
     var ok = all || (Array.isArray(pages) && pages.indexOf(pageOf(b)) !== -1);
     b.classList.toggle('d-none', !ok);
   });
-  document.querySelectorAll('#navacc .accordion-item').forEach(function (item) {
-    item.classList.toggle('d-none', !item.querySelector('.list-group-item-action:not(.d-none)'));
-  });
+  simplifyAdminNavigation();
 }
 function canPage(p) {
   if (p === 'updates') return IS_STAGING;
@@ -436,4 +434,17 @@ function savePageText() {
 function openReleaseNotes() {
   var box=document.getElementById('release-notes-content');box.textContent='載入中…';showModal('releaseNotesModal');
   call('getReleaseNotes',false).then(function(markdown){box.innerHTML=stagingMarkdownHtml(markdown);}).catch(function(){box.textContent='無法取得更新紀錄，請確認登入狀態。';});
+}
+
+function simplifyAdminNavigation() {
+  document.querySelectorAll('#navacc .accordion-item').forEach(function(item){
+    var entries=Array.from(item.querySelectorAll('.list-group-item-action')).filter(function(e){return !e.classList.contains('d-none');});
+    var heading=item.querySelector('.accordion-button'),panel=item.querySelector('.accordion-collapse');
+    item.classList.toggle('d-none',entries.length===0);
+    if(!heading||!panel)return;
+    if(entries.length)heading.classList.remove('d-none');
+    if(!heading.dataset.originalTarget)heading.dataset.originalTarget=heading.getAttribute('data-bs-target')||'#'+panel.id;
+    if(entries.length===1){heading.setAttribute('data-tab',entries[0].getAttribute('data-tab'));heading.removeAttribute('data-bs-toggle');heading.removeAttribute('data-bs-target');heading.removeAttribute('aria-expanded');heading.classList.add('nav-direct');panel.classList.add('d-none');}
+    else{heading.removeAttribute('data-tab');heading.setAttribute('data-bs-toggle','collapse');heading.setAttribute('data-bs-target',heading.dataset.originalTarget);heading.classList.remove('nav-direct');panel.classList.remove('d-none');}
+  });
 }

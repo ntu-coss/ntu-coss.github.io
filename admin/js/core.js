@@ -56,12 +56,13 @@ function clearToken() { try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) 
 function useToken(token) {
   TOKEN = token;
   document.getElementById('gate-msg').textContent = '驗證中…';
-  return call('whoami').then(function (email) {
-    ME = String(email || '').toLowerCase();
-    document.getElementById('admin-email').textContent = email;
-    saveToken(token);
-    enterApp();
-    return call('getMe').then(function (p) {
+  var initialEventId = new URLSearchParams(location.search).get('event');
+  var initialRequest = initialEventId ? call('getEventWorkspace', initialEventId, true).then(function(data) { window.__initialEventWorkspace=data; return data.profile; }) : call('getMe');
+  return initialRequest.then(function (p) {
+      ME = String(p.email || '').toLowerCase();
+      document.getElementById('admin-email').textContent = ME;
+      saveToken(token);
+      enterApp();
       MEPROF = p || {};
       resetStudentLookup();
       refreshServiceAlerts();
@@ -74,7 +75,6 @@ function useToken(token) {
       applyPagePerms(MEPROF.pages);
       var params = new URLSearchParams(location.search);
       goTab(params.has('event') || params.get('tab') === 'events' ? '#t-events' : '#t-dashboard');
-    }).catch(function () { goTab('#t-dashboard'); });
   }).catch(function (e) {
     TOKEN = null; clearToken();
     showGate('登入失敗：' + (e && e.message ? e.message : e));

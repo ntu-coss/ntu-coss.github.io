@@ -43,3 +43,21 @@ document.getElementById('sidebar').addEventListener('click', function (e) {
 });
 
 // 初始載入由登入成功後的 onSignIn() 觸發
+
+// Preserve a shareable activity URL without reloading scripts or signing in again.
+function handleEventNavigation(event) {
+  if(event.defaultPrevented || event.button!==0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || !TOKEN)return;
+  var anchor=event.target.closest && event.target.closest('a[href]');
+  if(!anchor || anchor.target || anchor.hasAttribute('download'))return;
+  var url=new URL(anchor.href,location.href);
+  if(url.origin!==location.origin || url.pathname!=='/admin/' || !(url.searchParams.has('event') || url.searchParams.get('tab')==='events'))return;
+  event.preventDefault();
+  if(!new URLSearchParams(location.search).has('event'))history.replaceState(null,'','/admin/?tab=events');
+  history.pushState(null,'',url.pathname+url.search);goTab('#t-events');
+}
+document.addEventListener('click',handleEventNavigation);
+window.addEventListener('popstate',function(){
+  if(!TOKEN)return;
+  var params=new URLSearchParams(location.search);
+  goTab(params.has('event')||params.get('tab')==='events'?'#t-events':'#t-dashboard');
+});

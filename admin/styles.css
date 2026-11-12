@@ -79,3 +79,9 @@ table { font-size: .9rem; }
 .dash-card .icon{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;flex:none;}
 .dash-card .ttl{font-weight:600;color:#1d3557;line-height:1.2;}
 .dash-card .desc{font-size:.82rem;color:#6c757d;}
+
+.admin-svg{vertical-align:-.18em;flex-shrink:0;}
+#navacc .nav-direct::after{display:none;}
+#navacc .nav-direct.active{background:var(--bs-primary-bg-subtle,#e7f1ff);color:var(--bs-primary,#0d6efd);}
+.admin-footer-links{display:flex;align-items:baseline;flex-wrap:wrap;gap:.3rem;}
+.admin-footer-links a,.admin-footer-links button{font-size:inherit;}

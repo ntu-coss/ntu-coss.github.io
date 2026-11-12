@@ -65,6 +65,7 @@
     <div class="offcanvas-body p-0 d-flex flex-column">
       <button class="dash-home-btn" data-tab="#t-dashboard"><i class="bi bi-grid-1x2 me-2"></i>後台首頁</button>
       <button class="dash-home-btn" data-tab="#t-quicklookup">快速查詢</button>
+      <button class="dash-home-btn" data-tab="#t-petition"><i class="bi bi-chat-left-text me-2" aria-hidden="true"></i>陳情處理</button>
       <div class="accordion accordion-flush flex-grow-1" id="navacc">
         <div class="accordion-item">
           <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-act"><i class="bi bi-calendar-event me-2"></i>活動管理</button></h2>
@@ -73,15 +74,14 @@
           </div></div>
         </div>
         <div class="accordion-item">
-          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-ann"><i class="bi bi-megaphone me-2"></i>公告管理</button></h2>
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-ann"><i class="bi bi-megaphone me-2"></i>公告與行事曆</button></h2>
           <div id="cat-ann" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
             <button class="list-group-item list-group-item-action" data-tab="#t-announce">公告</button>
             <button class="list-group-item list-group-item-action" data-tab="#t-calendar">行事曆</button>
-            <button class="list-group-item list-group-item-action" data-tab="#t-petition">陳情處理</button>
           </div></div>
         </div>
         <div class="accordion-item">
-          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-space"><i class="bi bi-door-open me-2"></i>空間管理</button></h2>
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-space"><i class="bi bi-door-open me-2"></i>場地與院櫃</button></h2>
           <div id="cat-space" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
             <button class="list-group-item list-group-item-action" data-tab="#t-venue">場地審核</button>
             <button class="list-group-item list-group-item-action" data-tab="#t-vset">場地設定</button>
@@ -95,7 +95,7 @@
           </div></div>
         </div>
         <div class="accordion-item">
-          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-page"><i class="bi bi-window-sidebar me-2"></i>頁面管理</button></h2>
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cat-page"><i class="bi bi-window-sidebar me-2"></i>網站內容</button></h2>
           <div id="cat-page" class="accordion-collapse collapse" data-bs-parent="#navacc"><div class="list-group list-group-flush">
             <button class="list-group-item list-group-item-action active" data-tab="#t-home">首頁橫幅</button>
             <button class="list-group-item list-group-item-action" data-tab="#t-pagetext">頁面說明</button>
@@ -121,7 +121,7 @@
             <button class="list-group-item list-group-item-action" data-tab="#t-roster">學生名單</button>
             <button class="list-group-item list-group-item-action" data-tab="#t-email">信件範本</button>
             <button class="list-group-item list-group-item-action" data-tab="#t-system">系統設定</button>
-            <button class="list-group-item list-group-item-action d-none" id="tab-admins-li" data-tab="#t-admins"><i class="bi bi-shield-lock me-1" aria-hidden="true"></i>系統管理員專區</button>
+            <button class="list-group-item list-group-item-action d-none" id="tab-admins-li" data-tab="#t-admins"><i class="bi bi-shield-lock me-1" aria-hidden="true"></i>管理員與權限</button>
             <button class="list-group-item list-group-item-action d-none" id="tab-audit-li" data-tab="#t-audit">操作紀錄</button>
           </div></div>
         </div>
@@ -981,12 +981,13 @@
         <a href="https://www.instagram.com/ntu.sssa/" target="_blank" rel="noreferrer" class="text-decoration-none">Instagram</a>
       </div>
       <div class="d-flex justify-content-between flex-wrap">
-        <span class="text-muted">© 2026 臺大社科院學生會</span><button type="button" class="btn btn-link btn-sm" data-ui-action="openReleaseNotes">更新紀錄</button>
+        <div class="admin-footer-links text-muted"><span>© 2026 臺大社科院學生會</span><span aria-hidden="true"> · </span><a href="/privacy">隱私權條款</a><span aria-hidden="true"> · </span><button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-ui-action="openReleaseNotes">更新紀錄</button></div>
         <span class="text-muted">Ver: <span data-build-version>讀取中</span></span>
       </div>
     </div>
   </footer>
 
+  <script defer src="/admin/js/icons.js"></script>
   <script defer src="/admin/js/core.js"></script>
   <script defer src="/admin/js/content.js"></script>
   <script defer src="/admin/js/database.js"></script>

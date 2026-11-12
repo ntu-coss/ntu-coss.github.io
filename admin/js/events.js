@@ -20,11 +20,21 @@ function openEvent(r) {
   document.getElementById('ev-modal-title').textContent = r ? '編輯活動' : '新增活動';
   showModal('eventModal');
 }
+var EVENT_LOAD_SEQUENCE=0;
 function loadEvents() {
+  var sequence=++EVENT_LOAD_SEQUENCE, loadToken=TOKEN;
+  var eventId=new URLSearchParams(location.search).get('event');
+  if(eventId){
+    var box=document.getElementById('ev-regs');box.innerHTML='<p role="status">載入活動名單中…</p>';
+    var initial=window.__initialEventWorkspace;window.__initialEventWorkspace=null;
+    var request=initial && initial.event.id===eventId ? Promise.resolve(initial) : call('getEventWorkspace',eventId,false);
+    request.then(function(data){if(sequence!==EVENT_LOAD_SEQUENCE||loadToken!==TOKEN)return;cacheEditRecords('event',[data.event],'id');document.getElementById('ev-list').innerHTML='';document.getElementById('ev-list').previousElementSibling.classList.add('d-none');viewRegs(data.event.id,data.event.title,data.registrations);}).catch(function(){if(sequence!==EVENT_LOAD_SEQUENCE||loadToken!==TOKEN)return;box.textContent='無法載入活動，請重新整理後再試。';});return;
+  }
+  document.getElementById('ev-list').previousElementSibling.classList.remove('d-none');
+  document.getElementById('ev-regs').innerHTML='';
   call('listEvents').then(function (rows) {
+    if(sequence!==EVENT_LOAD_SEQUENCE||loadToken!==TOKEN)return;
     cacheEditRecords('event', rows, 'id');
-    var eventId = new URLSearchParams(location.search).get('event');
-    if (eventId) { var chosen=rows.find(function(r){return r.id===eventId;});document.getElementById('ev-list').innerHTML='';document.getElementById('ev-list').previousElementSibling.classList.add('d-none'); if(!chosen){document.getElementById('ev-regs').textContent='找不到活動或無存取權。';return;}viewRegs(chosen.id,chosen.title);return; }
     document.getElementById('ev-list').innerHTML = rows.length ? rows.map(function (r) {
       return '<div class="card mb-2 shadow-sm border-0"><div class="card-body py-2 d-flex align-items-center gap-2">' +
         (r.image ? '<img src="' + esc(r.image) + '" style="width:64px;height:48px;object-fit:cover;border-radius:6px">' : '<div style="width:64px;height:48px;border-radius:6px;background:#eef1f6;display:flex;align-items:center;justify-content:center"><i class="bi bi-image text-secondary"></i></div>') +
@@ -152,14 +162,15 @@ function printCheckinQR() {
     '<p style="color:#555;word-break:break-all">' + esc(url) + '</p></div>';
   printDoc(title + ' 簽到 QR', body, 'th,td{border:none;}');
 }
-function viewRegs(eventId, title) {
+function viewRegs(eventId, title, preloadedRows) {
   window.__regEvent = { id: eventId, title: title };
-  call('listRegistrations', eventId).then(function (rows) {
+  (Array.isArray(preloadedRows) ? Promise.resolve(preloadedRows) : call('listRegistrations', eventId)).then(function (rows) {
     window.__regRows = rows; window.__quickCandidate = null;
     var withEmail = rows.filter(function (r) { return r.email; }).length;
     var checkedIn = rows.filter(function (r) { return r.checkinAt; }).length;
     var record = EDIT_RECORDS.event && EDIT_RECORDS.event[eventId];
-    var html = '<a href="/admin/?tab=events" class="btn btn-outline-secondary btn-sm mb-3">返回活動列表</a><h1 class="h4">'+esc(title)+'</h1><p class="text-muted">共 '+rows.length+' 人，已簽到 '+checkedIn+' 人</p><div class="d-flex flex-wrap gap-2 mb-3">'+editRecordButton('event',eventId,true)+(record ? '<button class="btn btn-outline-secondary" data-ui-action="copyEventLink" data-slug="'+esc(record.slug||eventId)+'">複製活動連結</button>' : '')+'<button class="btn btn-primary" data-ui-action="openQuickEventCheckin">快速簽到</button><button class="btn btn-outline-primary" data-ui-action="openEventMail">發信</button><button class="btn btn-outline-secondary" data-ui-action="syncEventResponses">同步名單</button><button class="btn btn-outline-secondary" data-ui-action="openEventMapping">欄位對應</button><button class="btn btn-outline-secondary" data-ui-action="signInSheet">簽到表 PDF</button>'+(record && record.checkinMode ? '<button class="btn btn-outline-secondary" data-ui-action="showCheckinQR" data-slug="'+esc(record.slug||eventId)+'" data-title="'+esc(title)+'">簽到 QR</button>' : '')+'<button class="btn btn-outline-danger" data-ui-action="delEv" data-id="'+esc(eventId)+'">刪除活動</button></div><div id="event-service-alerts" role="status"></div>';
+    var html = '<a href="/admin/?tab=events" class="btn btn-outline-secondary btn-sm mb-3">返回活動列表</a><h1 class="h4">'+esc(title)+'</h1><p class="text-muted">共 '+rows.length+' 人，已簽到 '+checkedIn+' 人</p><div class="d-flex flex-wrap gap-2 mb-3">'+editRecordButton('event',eventId,false)+(record ? '<button class="btn btn-outline-secondary" data-ui-action="copyEventLink" data-slug="'+esc(record.slug||eventId)+'">複製活動連結</button>' : '')+'<button class="btn btn-primary" data-ui-action="openQuickEventCheckin">快速簽到</button><button class="btn btn-outline-primary" data-ui-action="openEventMail">發信</button><button class="btn btn-outline-secondary" data-ui-action="syncEventResponses">同步名單</button><button class="btn btn-outline-secondary" data-ui-action="openEventMapping">欄位對應</button><button class="btn btn-outline-secondary" data-ui-action="signInSheet">簽到表 PDF</button>'+(record && record.checkinMode ? '<button class="btn btn-outline-secondary" data-ui-action="showCheckinQR" data-slug="'+esc(record.slug||eventId)+'" data-title="'+esc(title)+'">簽到 QR</button>' : '')+'<button class="btn btn-outline-danger" data-ui-action="delEv" data-id="'+esc(eventId)+'">刪除活動</button></div><div id="event-service-alerts" role="status"></div>';
+    html = eventToolbarIcons(html);
     html += rows.length
       ? '<div class="admin-table-scroll"><table class="table table-sm table-striped align-middle"><thead><tr><th>#</th><th>姓名</th><th>學號</th><th>Email</th><th>系級</th><th>身份別</th><th>來源</th><th>簽到</th><th>備註</th><th>時間</th><th></th></tr></thead><tbody>' +
         rows.map(function (r, i) {
@@ -169,7 +180,7 @@ function viewRegs(eventId, title) {
         }).join('') + '</tbody></table></div>'
       : '<p class="text-muted">尚無人報名。</p>';
     document.getElementById('ev-regs').innerHTML = html;
-    call('listServiceAlerts').then(function (alerts) { document.getElementById('event-service-alerts').textContent = alerts.length ? '服務警示：' + alerts.slice(0, 5).map(function(a) { return a.createdAt + ' ' + a.service + '：' + a.message; }).join('；') : ''; });
+
   });
 }
 function sendRegMail() {
