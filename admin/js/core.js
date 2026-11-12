@@ -262,6 +262,7 @@ document.addEventListener('click', function (event) {
     openEventMapping: function () { openEventMapping(); },
     copyServiceAccount: function () { if (MEPROF && MEPROF.serviceAccountEmail) navigator.clipboard.writeText(MEPROF.serviceAccountEmail).then(function(){notify('已複製服務帳戶');}); },
     openQuickEventCheckin: function () { openQuickEventCheckin(); },
+    saveEventColumnMappingAndSync: function () { saveEventColumnMapping(true); },
     saveEventColumnMapping: function () { saveEventColumnMapping(); },
     syncEventResponses: function () { syncEventResponses(); },
     manualEventCheckin: function () { manualEventCheckin(actionTarget.dataset.id); },

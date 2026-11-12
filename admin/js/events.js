@@ -181,7 +181,17 @@ function sendRegMail() {
 }
 function delReg(id) { var ev = window.__regEvent; if (confirm('刪除此筆報名？')) call('deleteRegistration', id).then(function () { viewRegs(ev.id, ev.title); }); }
 
-function syncEventResponses() { var ev = window.__regEvent; if (!ev) return; call('syncEventResponses', ev.id).then(function(r) { notify('同步完成，新增 ' + r.added + ' 人；略過空白或重複 ' + r.skipped + ' 筆'); viewRegs(ev.id, ev.title); }); }
+function syncEventResponses() {
+  var ev=window.__regEvent;if(!ev)return Promise.resolve();
+  return call('getEventResponseColumns',ev.id,'').then(function(data){
+    if(!data.tabs.length){notify('請先編輯活動，設定回覆試算表連結。',false);return;}
+    var name=data.event.responseNameColumn || '姓名';
+    if(data.event.responseSheetTab!==data.tab || !data.headers.includes(name)){
+      showModal('eventMappingModal');return loadEventColumnMapping(data.tab);
+    }
+    return call('syncEventResponses',ev.id).then(function(r){notify('同步完成，新增 '+r.added+' 人；略過空白或重複 '+r.skipped+' 筆');viewRegs(ev.id,ev.title);return true;});
+  });
+}
 function manualEventCheckin(id) { var ev = window.__regEvent; if (!ev) return; call('checkinRegistration', ev.id, id).then(function(r) { notify(r.already ? r.name + ' 已簽到，未重複登記' : r.name + ' 簽到完成'); viewRegs(ev.id, ev.title); }); }
 function openQuickEventCheckin() {
   var input=document.getElementById('quick-checkin'), list=document.getElementById('quick-checkin-candidates'), status=document.getElementById('quick-checkin-status');
@@ -199,7 +209,7 @@ function openEventMail(){document.getElementById('reg-mail-count').textContent=(
 function openEventMapping(){showModal('eventMappingModal');loadEventColumnMapping();}
 function loadEventColumnMapping(tab) {
   var eventId = window.__regEvent.id;
-  call('getEventResponseColumns', eventId, tab || '').then(function(data) {
+  return call('getEventResponseColumns', eventId, tab || '').then(function(data) {
     var box = document.getElementById('event-column-mapping');
     if (!box || window.__regEvent.id !== eventId) return;
     if (!data.tabs.length) { box.innerHTML = '<p class="text-muted small">尚未設定回覆試算表連結，可在編輯活動中填寫。</p>'; return; }
@@ -210,13 +220,16 @@ function loadEventColumnMapping(tab) {
       var selected = data.event[key] == null ? defaults[key] : data.event[key];
       html += '<div class="col-6 col-lg-3"><label for="mapping-'+key+'" class="form-label">'+labels[key]+'</label><select id="mapping-'+key+'" class="form-select"><option value="">'+(key === 'responseNameColumn' ? '請選擇' : '不匯入')+'</option>'+data.headers.filter(Boolean).map(function(h) {return '<option value="'+esc(h)+'"'+(h === selected ? ' selected' : '')+'>'+esc(h)+'</option>';}).join('')+'</select></div>';
     });
-    html += '</div><button type="button" class="btn btn-outline-primary mt-3" data-ui-action="saveEventColumnMapping">儲存欄位對應</button><p class="form-text mb-0">儲存後按「同步表單回覆」。姓名必須對應，其他欄位可不匯入。</p></div></div>';
+    html += '</div><button type="button" class="btn btn-outline-primary mt-3" data-ui-action="saveEventColumnMapping">儲存欄位對應</button><button type="button" class="btn btn-primary mt-3 ms-2" data-ui-action="saveEventColumnMappingAndSync">儲存並同步名單</button><p class="form-text mb-0">儲存後按「同步表單回覆」。姓名必須對應，其他欄位可不匯入。</p></div></div>';
     box.innerHTML = html;
     document.getElementById('event-response-tab').onchange = function() { loadEventColumnMapping(this.value); };
   }).catch(function() { var box=document.getElementById('event-column-mapping'); if(box)box.textContent='無法載入回覆試算表欄位，請確認共用權限及連結。'; });
 }
-function saveEventColumnMapping() {
+function saveEventColumnMapping(syncAfterSave) {
   var config = { responseSheetTab: document.getElementById('event-response-tab').value };
   ['responseNameColumn','responseStudentIdColumn','responseEmailColumn','responseDeptColumn'].forEach(function(key) { config[key] = document.getElementById('mapping-'+key).value; });
-  call('saveEventResponseColumns', window.__regEvent.id, config).then(function() { notify('欄位對應已儲存'); });
+  return call('saveEventResponseColumns', window.__regEvent.id, config).then(function() {
+    if(syncAfterSave) return syncEventResponses().then(function(synced){if(synced===true)hideModal('eventMappingModal');});
+    notify('欄位對應已儲存');
+  });
 }
