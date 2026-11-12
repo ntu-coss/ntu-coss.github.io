@@ -264,7 +264,7 @@ function sendLockerMail() {
   if (!subj.trim() || !body.trim()) { notify('請填寫主旨與內文', false); return; }
   if (!confirm('確定寄送給選取的 ' + nums.length + ' 位借用者？\n（收件地址為學號@ntu.edu.tw）')) return;
   call('emailLockers', nums, subj, body).then(function (res) {
-    notify('已寄送給 ' + (res && res.sent) + ' 人');
+    notify('已確認寄送 ' + res.sent + ' 人；結果未確認 ' + (res.unconfirmed || 0) + ' 人；未寄送 ' + (res.notSent || 0) + ' 人。' + (res.error || ''), !res.error);
     var m = bootstrap.Modal.getInstance(document.getElementById('lockerMailModal')); if (m) m.hide();
   });
 }

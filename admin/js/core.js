@@ -63,6 +63,8 @@ function useToken(token) {
     enterApp();
     return call('getMe').then(function (p) {
       MEPROF = p || {};
+      refreshServiceAlerts();
+      if (!window.__serviceAlertsTimer) window.__serviceAlertsTimer = setInterval(refreshServiceAlerts, 120000);
       var g = ((MEPROF.title || '') + ' ' + (MEPROF.name || '')).trim();
       document.getElementById('greet').textContent = g || MEPROF.email || '管理員';
       resetAnnounce(); resetEv();
@@ -251,6 +253,8 @@ document.addEventListener('click', function (event) {
     delEv: function () { delEv(actionTarget.dataset.id); },
     signInSheet: function () { signInSheet(); },
     closeEventRegs: function () { document.getElementById('ev-regs').innerHTML = ''; },
+    syncEventResponses: function () { syncEventResponses(); },
+    manualEventCheckin: function () { manualEventCheckin(actionTarget.dataset.id); },
     sendRegMail: function () { sendRegMail(); },
     delReg: function () { delReg(actionTarget.dataset.id); },
     delSeal: function () { delSeal(actionTarget.dataset.id); },
@@ -264,3 +268,14 @@ document.addEventListener('change', function (event) {
     toggleEquip(target.dataset.id, target.checked);
   }
 });
+
+function refreshServiceAlerts() {
+  if (!TOKEN) return;
+  call('listServiceAlerts').then(function (rows) {
+    var box = document.getElementById('service-alert-banner');
+    if (!box) { box = document.createElement('div'); box.id = 'service-alert-banner'; box.className = 'alert alert-warning m-3'; box.setAttribute('role', 'status'); document.body.prepend(box); }
+    var recent = rows.filter(function(r) { return Date.now() - Date.parse(r.createdAt) < 86400000; });
+    box.hidden = !recent.length;
+    box.textContent = recent.length ? '系統服務警示：' + recent.slice(0, 3).map(function(r) { return r.createdAt + ' ' + r.service + '：' + r.message; }).join('；') : '';
+  }).catch(function () {});
+}
